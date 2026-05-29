@@ -1,5 +1,7 @@
  {
   "version": 2,
+  "buildCommand": "echo 'Skipping frontend build via config file'",
+  "outputDirectory": ".",
   "builds": [
     {
       "src": "index.js",
