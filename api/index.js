@@ -1,4 +1,4 @@
-import express from 'express';
+ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
@@ -19,8 +19,8 @@ app.use(cors({
   credentials: true
 }));
 
-// Connect to MongoDB Atlas
-const mongoURI = process.env.MONGO || "mongodb+srv://christutu5097_db_user:1eoGY4UmqG5qVaN9@baylat.ymmpknl.mongodb.net/?retryWrites=true&w=majority&appName=baylat";
+// Connect to MongoDB Atlas (Looks for environment variables first, falls back to raw string safely)
+const mongoURI = process.env.MONGO_URI || process.env.MONGO || "mongodb+srv://christutu5097_db_user:1eoGY4UmqG5qVaN9@baylat.ymmpknl.mongodb.net/?retryWrites=true&w=majority&appName=baylat";
 
 mongoose.connect(mongoURI)
   .then(() => {
