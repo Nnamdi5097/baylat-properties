@@ -19,16 +19,50 @@ app.use(cors({
   credentials: true
 }));
 
-// Connect to MongoDB Atlas (Looks for environment variables first, falls back to raw string safely)
+// --- SERVERLESS MONGOOSE CONNECTION CACHE ---
 const mongoURI = process.env.MONGO_URI || process.env.MONGO || "mongodb+srv://christutu5097_db_user:1eoGY4UmqG5qVaN9@baylat.ymmpknl.mongodb.net/?retryWrites=true&w=majority&appName=baylat";
 
-mongoose.connect(mongoURI)
-  .then(() => {
-    console.log('Connected to MongoDB successfully!');
-  })
-  .catch((err) => {
-    console.error('MongoDB Connection Error:', err);
-  });
+// Maintain a global cache so connections survive across Vercel function calls
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
+// Global middleware to guarantee database connectivity before handling routes
+app.use(async (req, res, next) => {
+  try {
+    // Disable command buffering so it errors immediately instead of hanging for 10 seconds
+    mongoose.set('bufferCommands', false);
+    mongoose.set('strictQuery', true);
+
+    if (cached.conn) {
+      return next();
+    }
+
+    if (!cached.promise) {
+      const opts = {
+        bufferCommands: false,
+        serverSelectionTimeoutMS: 8000, 
+      };
+
+      cached.promise = mongoose.connect(mongoURI, opts).then((mongooseInstance) => {
+        console.log('New MongoDB connection established successfully!');
+        return mongooseInstance;
+      });
+    }
+
+    cached.conn = await cached.promise;
+    next();
+  } catch (error) {
+    console.error('MongoDB Serverless Connection Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: "Database connection failed under heavy serverless traffic.",
+      error: error.message
+    });
+  }
+});
 
 // --- ROUTE IMPORTS ---
 import userRouter from './routes/user.route.js';
