@@ -8,7 +8,7 @@
     "build": "npm install && npm install --prefix client && npm run build --prefix client"
   },
   "dependencies": {
-    "cookieParser": "^1.4.6",
+    "cookieparser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
