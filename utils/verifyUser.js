@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import { errorHandler } from './error.js';
 
 export const verifyToken = (req, res, next) => {
-  // 1. Look for the token in the cookies OR the Authorization Header fallback
+  // 1. Look for the token in cookies, or fall back to the Authorization Header
   const token = req.cookies?.access_token || req.headers['authorization']?.split(' ')[1];
 
   // 2. If no token is found on either channel, block unauthorized access smoothly
