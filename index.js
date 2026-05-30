@@ -1,9 +1,14 @@
- import express from 'express';
+import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import path from 'path';
+
+// --- ALL ROUTE IMPORTS HOISTED CLEANLY AT THE TOP ---
+import userRouter from './routes/user.route.js';
+import authRouter from './routes/auth.route.js';
+import listingRouter from './routes/listing.route.js';
 
 // Load environment variables
 dotenv.config();
@@ -11,7 +16,7 @@ dotenv.config();
 // Initialize Express app
 const app = express();
 
-// --- SECURE CORS CONFIGURATION (Placed at the absolute top) ---
+// --- SECURE CORS CONFIGURATION ---
 const allowedOrigins = [
   'https://baylatproperties.ng',
   'https://www.baylatproperties.ng',
@@ -21,7 +26,6 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow server-to-server or mobile requests with no origin specified
     if (!origin) return callback(null, true);
     if (allowedOrigins.indexOf(origin) !== -1) {
       return callback(null, true);
@@ -49,24 +53,22 @@ app.options('*', (req, res) => {
   return res.sendStatus(204);
 });
 
-// Standard body-parsing middleware
+// --- CORE MIDDLEWARE (Guaranteed to execute before routes) ---
 app.use(express.json());
-app.use(cookieParser());
+app.use(cookieParser()); // 🔥 FIXED: Now fully armed before requests hit the routers below
 
 // --- SERVERLESS MONGOOSE CONNECTION CACHE ---
 const mongoURI = process.env.MONGO_URI || process.env.MONGO || "mongodb+srv://christutu5097_db_user:1eoGY4UmqG5qVaN9@baylat.ymmpknl.mongodb.net/?retryWrites=true&w=majority&appName=baylat";
 
-// Maintain a global cache so connections survive across Vercel function calls
 let cached = global.mongoose;
 
 if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
 }
 
-// Global middleware to guarantee database connectivity before handling routes
+// Global middleware to guarantee database connectivity
 app.use(async (req, res, next) => {
   try {
-    // Disable command buffering so it errors immediately instead of hanging for 10 seconds
     mongoose.set('bufferCommands', false);
     mongoose.set('strictQuery', true);
 
@@ -91,7 +93,6 @@ app.use(async (req, res, next) => {
   } catch (error) {
     console.error('MongoDB Serverless Connection Error:', error);
     
-    // Inject CORS headers into database connection error frames
     const origin = req.headers.origin;
     if (allowedOrigins.includes(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin);
@@ -107,11 +108,6 @@ app.use(async (req, res, next) => {
     });
   }
 });
-
-// --- ROUTE IMPORTS (Corrected paths relative to root file location) ---
-import userRouter from './routes/user.route.js';
-import authRouter from './routes/auth.route.js';
-import listingRouter from './routes/listing.route.js';
 
 // --- ROUTE LINKING ---
 app.use('/api/user', userRouter);
@@ -131,7 +127,6 @@ app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
 
-  // Inject fallback CORS headers onto custom execution errors
   const origin = req.headers.origin;
   if (allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
@@ -147,7 +142,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Only start listening on a port if we aren't running in a Vercel serverless environment
+// Start server locally if not in production
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
@@ -155,5 +150,4 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-// Export app for Vercel
-export default app;
+export default app; 
