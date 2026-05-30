@@ -11,11 +11,7 @@ dotenv.config();
 // Initialize Express app
 const app = express();
 
-// Middleware configuration
-app.use(express.json());
-app.use(cookieParser());
-
-// --- SECURE CORS CONFIGURATION ---
+// --- SECURE CORS CONFIGURATION (Placed at the absolute top) ---
 const allowedOrigins = [
   'https://baylatproperties.ng',
   'https://www.baylatproperties.ng',
@@ -35,21 +31,27 @@ app.use(cors({
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Cookie']
 }));
 
-// Express fallback to explicitly handle preflight OPTIONS requests cleanly for Vercel
+// Intercept browser preflight OPTIONS requests immediately
 app.options('*', (req, res) => {
   const origin = req.headers.origin;
   if (allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', 'https://baylatproperties.ng');
   }
   res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Cookie');
   return res.sendStatus(204);
 });
+
+// Standard body-parsing middleware
+app.use(express.json());
+app.use(cookieParser());
 
 // --- SERVERLESS MONGOOSE CONNECTION CACHE ---
 const mongoURI = process.env.MONGO_URI || process.env.MONGO || "mongodb+srv://christutu5097_db_user:1eoGY4UmqG5qVaN9@baylat.ymmpknl.mongodb.net/?retryWrites=true&w=majority&appName=baylat";
@@ -88,6 +90,16 @@ app.use(async (req, res, next) => {
     next();
   } catch (error) {
     console.error('MongoDB Serverless Connection Error:', error);
+    
+    // Inject CORS headers into database connection error frames
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    } else {
+      res.setHeader('Access-Control-Allow-Origin', 'https://baylatproperties.ng');
+    }
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+
     return res.status(500).json({
       success: false,
       message: "Database connection failed under heavy serverless traffic.",
@@ -118,6 +130,16 @@ app.all('/', (req, res) => {
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
+
+  // Inject fallback CORS headers onto custom execution errors
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', 'https://baylatproperties.ng');
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+
   return res.status(statusCode).json({
     success: false,
     statusCode,
