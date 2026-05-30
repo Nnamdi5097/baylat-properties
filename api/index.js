@@ -14,10 +14,33 @@ const app = express();
 // Middleware configuration
 app.use(express.json());
 app.use(cookieParser());
+
+// --- SECURE CORS CONFIGURATION ---
+// Explicitly whitelist your cPanel live domain and local environments to allow cookies/credentials
+const allowedOrigins = [
+  'https://baylatproperties.ng',
+  'https://www.baylatproperties.ng',
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+
 app.use(cors({
-  origin: '*', 
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow server-to-server or mobile requests with no origin specified
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
 }));
+
+// Handle preflight requests across all endpoints
+app.options('*', cors());
 
 // --- SERVERLESS MONGOOSE CONNECTION CACHE ---
 const mongoURI = process.env.MONGO_URI || process.env.MONGO || "mongodb+srv://christutu5097_db_user:1eoGY4UmqG5qVaN9@baylat.ymmpknl.mongodb.net/?retryWrites=true&w=majority&appName=baylat";
@@ -82,7 +105,7 @@ app.all('/', (req, res) => {
   res.status(200).json({ message: "Baylat Properties Backend is Live on Vercel!" });
 });
 
-// Global Error Handling Middleware
+// Global Error Handling Middleware (Ensures JSON errors are ALWAYS sent instead of HTML text blocks)
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
