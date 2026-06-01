@@ -25,13 +25,14 @@ export const signin = async (req, res, next) => {
     const token = jwt.sign({ id: validUser._id }, process.env.JWT_SECRET);
     const { password: pass, ...rest } = validUser._doc;
     
-    // ✅ FIXED: Added maxAge/expires parameter so cross-site browsers accept and preserve the cookie
+    // ✅ OPTIMIZED: Added partitioned flag for robust modern cross-site cookie storage
     res
       .cookie('access_token', token, { 
         httpOnly: true,
         secure: true, 
         sameSite: 'none',
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
+        partitioned: true
       })
       .status(200)
       .json(rest);
@@ -47,13 +48,13 @@ export const google = async (req, res, next) => {
       const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
       const { password: pass, ...rest } = user._doc;
       
-      // ✅ FIXED: Added maxAge parameter to Google Sign-In cookie block
       res
         .cookie('access_token', token, { 
           httpOnly: true,
           secure: true, 
           sameSite: 'none',
           maxAge: 30 * 24 * 60 * 60 * 1000,
+          partitioned: true
         })
         .status(200)
         .json(rest);
@@ -74,13 +75,13 @@ export const google = async (req, res, next) => {
       const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET);
       const { password: pass, ...rest } = newUser._doc;
       
-      // ✅ FIXED: Added maxAge parameter to new Google User signup block
       res
         .cookie('access_token', token, { 
           httpOnly: true,
           secure: true, 
           sameSite: 'none',
           maxAge: 30 * 24 * 60 * 60 * 1000,
+          partitioned: true
         })
         .status(200)
         .json(rest);
@@ -92,11 +93,12 @@ export const google = async (req, res, next) => {
 
 export const signOut = async (req, res, next) => {
   try {
-    // ✅ FIXED: Matching clearance configuration exactly to clear out old cross-site traces
+    // ✅ FIXED: Explicitly matching clearance properties with the partitioned flag so it wipes clean
     res.clearCookie('access_token', {
       httpOnly: true,
       secure: true,
-      sameSite: 'none'
+      sameSite: 'none',
+      partitioned: true
     });
     res.status(200).json('User has been logged out!');
   } catch (error) {
