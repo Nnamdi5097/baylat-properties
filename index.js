@@ -9,6 +9,7 @@ import path from 'path';
 import userRouter from './routes/user.route.js';
 import authRouter from './routes/auth.route.js';
 import listingRouter from './routes/listing.route.js';
+import mailRouter from './routes/mail.route.js'; // ✅ REGISTERED: New contact mailing system route
 
 // Load environment variables
 dotenv.config();
@@ -17,19 +18,17 @@ dotenv.config();
 const app = express();
 
 // --- SECURE CORS CONFIGURATION ---
-// ✅ UPDATED: Added all environment domains (Vercel + Custom Domain) to prevent cross-origin tracking blockages
 const allowedOrigins = [
   'https://baylatproperties.ng',
   'https://www.baylatproperties.ng',
   'https://baylat-properties-kmcg.vercel.app',
-  'https://baylat-properties-kmcg-git-main-nnamdi5097s-projects.vercel.app', // Catching Vercel deployment preview builds if any
+  'https://baylat-properties-kmcg-git-main-nnamdi5097s-projects.vercel.app', 
   'http://localhost:5173',
   'http://localhost:3000'
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow server-to-server or REST client tools (like Postman)
     if (!origin) return callback(null, true);
     
     if (allowedOrigins.indexOf(origin) !== -1) {
@@ -41,7 +40,8 @@ app.use(cors({
   },
   credentials: true, // Crucial: Allows cookies to pass from frontend to backend over the cloud
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Cookie']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Cookie'],
+  exposedHeaders: ['set-cookie'] // Optimized: Instructs browsers it is safe to read cross-origin auth cookie responses
 }));
 
 // Intercept browser preflight OPTIONS requests immediately
@@ -118,6 +118,7 @@ app.use(async (req, res, next) => {
 app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/listing', listingRouter);
+app.use('/api/mail', mailRouter); // ✅ ACTIVATED: Handles contact form message routing safely
 
 // Safety Catch
 app.use('/sign-in', authRouter);
