@@ -1,4 +1,4 @@
-import express from 'express';
+ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
@@ -55,7 +55,7 @@ app.options('*', (req, res) => {
 
 // --- CORE MIDDLEWARE (Guaranteed to execute before routes) ---
 app.use(express.json());
-app.use(cookieParser()); // 🔥 FIXED: Now fully armed before requests hit the routers below
+app.use(cookieParser()); 
 
 // --- SERVERLESS MONGOOSE CONNECTION CACHE ---
 const mongoURI = process.env.MONGO_URI || process.env.MONGO || "mongodb+srv://christutu5097_db_user:1eoGY4UmqG5qVaN9@baylat.ymmpknl.mongodb.net/?retryWrites=true&w=majority&appName=baylat";
@@ -150,4 +150,4 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-export default app; 
+export default app;   

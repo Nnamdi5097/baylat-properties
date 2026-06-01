@@ -9,7 +9,6 @@ export const signup = async (req, res, next) => {
   const newUser = new User({ username, email, password: hashedPassword });
   try {
     await newUser.save();
-    // 🔥 FIXED: Returning a structured object so frontend validation passes seamlessly
     res.status(201).json({ success: true, message: 'User created successfully!' });
   } catch (error) {
     next(error);
@@ -26,12 +25,13 @@ export const signin = async (req, res, next) => {
     const token = jwt.sign({ id: validUser._id }, process.env.JWT_SECRET);
     const { password: pass, ...rest } = validUser._doc;
     
-    // 🔥 FIXED: Added cross-origin flags so cookies flow safely from Vercel to cPanel
+    // ✅ FIXED: Added maxAge/expires parameter so cross-site browsers accept and preserve the cookie
     res
       .cookie('access_token', token, { 
         httpOnly: true,
         secure: true, 
-        sameSite: 'none' 
+        sameSite: 'none',
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
       })
       .status(200)
       .json(rest);
@@ -47,12 +47,13 @@ export const google = async (req, res, next) => {
       const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
       const { password: pass, ...rest } = user._doc;
       
-      // 🔥 FIXED: Added cross-origin flags to Google OAuth cookie generation
+      // ✅ FIXED: Added maxAge parameter to Google Sign-In cookie block
       res
         .cookie('access_token', token, { 
           httpOnly: true,
           secure: true, 
-          sameSite: 'none' 
+          sameSite: 'none',
+          maxAge: 30 * 24 * 60 * 60 * 1000,
         })
         .status(200)
         .json(rest);
@@ -73,12 +74,13 @@ export const google = async (req, res, next) => {
       const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET);
       const { password: pass, ...rest } = newUser._doc;
       
-      // 🔥 FIXED: Added cross-origin flags to brand new Google user registration cookies
+      // ✅ FIXED: Added maxAge parameter to new Google User signup block
       res
         .cookie('access_token', token, { 
           httpOnly: true,
           secure: true, 
-          sameSite: 'none' 
+          sameSite: 'none',
+          maxAge: 30 * 24 * 60 * 60 * 1000,
         })
         .status(200)
         .json(rest);
@@ -90,7 +92,7 @@ export const google = async (req, res, next) => {
 
 export const signOut = async (req, res, next) => {
   try {
-    // 🔥 FIXED: Explicitly targeting cross-origin cookies on logout clearance
+    // ✅ FIXED: Matching clearance configuration exactly to clear out old cross-site traces
     res.clearCookie('access_token', {
       httpOnly: true,
       secure: true,
