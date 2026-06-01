@@ -17,16 +17,21 @@ dotenv.config();
 const app = express();
 
 // --- SECURE CORS CONFIGURATION ---
+// ✅ UPDATED: Added all environment domains (Vercel + Custom Domain) to prevent cross-origin tracking blockages
 const allowedOrigins = [
   'https://baylatproperties.ng',
   'https://www.baylatproperties.ng',
+  'https://baylat-properties-kmcg.vercel.app',
+  'https://baylat-properties-kmcg-git-main-nnamdi5097s-projects.vercel.app', // Catching Vercel deployment preview builds if any
   'http://localhost:5173',
   'http://localhost:3000'
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
+    // Allow server-to-server or REST client tools (like Postman)
     if (!origin) return callback(null, true);
+    
     if (allowedOrigins.indexOf(origin) !== -1) {
       return callback(null, true);
     } else {
@@ -34,7 +39,7 @@ app.use(cors({
       return callback(new Error(msg), false);
     }
   },
-  credentials: true,
+  credentials: true, // Crucial: Allows cookies to pass from frontend to backend over the cloud
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Cookie']
 }));
@@ -150,4 +155,4 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-export default app;   
+export default app;
