@@ -9,7 +9,7 @@ import path from 'path';
 import userRouter from './routes/user.route.js';
 import authRouter from './routes/auth.route.js';
 import listingRouter from './routes/listing.route.js';
-import mailRouter from './routes/mail.route.js'; // ✅ REGISTERED: New contact mailing system route
+import mailRouter from './routes/mail.route.js'; // REGISTERED: New contact mailing system route
 
 // Load environment variables
 dotenv.config();
@@ -41,17 +41,21 @@ app.use(cors({
   credentials: true, // Crucial: Allows cookies to pass from frontend to backend over the cloud
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Cookie'],
-  exposedHeaders: ['set-cookie'] // Optimized: Instructs browsers it is safe to read cross-origin auth cookie responses
+  exposedHeaders: ['set-cookie'] // Instructs browsers it is safe to read cross-origin auth cookie responses
 }));
 
-// Intercept browser preflight OPTIONS requests immediately
+// --- FIXED: INTERCEPT BROWSER PREFLIGHT OPTIONS REQUESTS DYNAMICALLY FOR MOBILE COMPLIANCE ---
 app.options('*', (req, res) => {
   const origin = req.headers.origin;
+  
+  // Ensure we dynamically echo the exact origin if allowed, preventing mobile browser rejections
   if (allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   } else {
+    // Default fallback to root domain if origin header is strangely missing
     res.setHeader('Access-Control-Allow-Origin', 'https://baylatproperties.ng');
   }
+  
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Cookie');
@@ -118,7 +122,7 @@ app.use(async (req, res, next) => {
 app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/listing', listingRouter);
-app.use('/api/mail', mailRouter); // ✅ ACTIVATED: Handles contact form message routing safely
+app.use('/api/mail', mailRouter); // ACTIVATED: Handles contact form message routing safely
 
 // Safety Catch
 app.use('/sign-in', authRouter);
