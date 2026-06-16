@@ -127,9 +127,10 @@ app.use('/api/mail', mailRouter); // ACTIVATED: Handles contact form message rou
 // Safety Catch
 app.use('/sign-in', authRouter);
 
-// Fallback test route
-app.all('/', (req, res) => {
-  res.status(200).json({ message: "Baylat Properties Backend is Live on Vercel!" });
+// --- UPDATED HEALTHCHECK PATH ---
+// Shift fallback health-check status tracker down into an isolated route segment
+app.get('/api/healthcheck', (req, res) => {
+  res.status(200).json({ status: "alive", message: "Baylat Properties Node.js Backend is operational!" });
 });
 
 // Global Error Handling Middleware
@@ -152,12 +153,11 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server locally if not in production
-if (process.env.NODE_ENV !== 'production') {
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
-    console.log(`Server is running beautifully on port ${PORT}`);
-  });
-}
+// --- FIXED: FORCED PORT BINDING TO ELIMINATE CPANEL PASSENGER 503 ERROR ---
+// Phusion Passenger completely requires the app to listen on a dynamically passed port.
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server is running beautifully on port ${PORT}`);
+});
 
 export default app;
