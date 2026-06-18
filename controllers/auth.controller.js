@@ -25,13 +25,14 @@ export const signin = async (req, res, next) => {
     const token = jwt.sign({ id: validUser._id }, process.env.JWT_SECRET);
     const { password: pass, ...rest } = validUser._doc;
     
-    // ✅ OPTIMIZED: Added partitioned flag for robust modern cross-site cookie storage
+    // ✅ OPTIMIZED: Robust configuration including root path for absolute mobile storage visibility
     res
       .cookie('access_token', token, { 
         httpOnly: true,
         secure: true, 
         sameSite: 'none',
-        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
+        path: '/',                          // 🚨 FIXED: Explicitly sets path so mobile subroutes can read it
+        maxAge: 30 * 24 * 60 * 60 * 1000,   // 30 days in milliseconds
         partitioned: true
       })
       .status(200)
@@ -53,6 +54,7 @@ export const google = async (req, res, next) => {
           httpOnly: true,
           secure: true, 
           sameSite: 'none',
+          path: '/',                        // 🚨 FIXED: Added explicit root path
           maxAge: 30 * 24 * 60 * 60 * 1000,
           partitioned: true
         })
@@ -80,6 +82,7 @@ export const google = async (req, res, next) => {
           httpOnly: true,
           secure: true, 
           sameSite: 'none',
+          path: '/',                        // 🚨 FIXED: Added explicit root path
           maxAge: 30 * 24 * 60 * 60 * 1000,
           partitioned: true
         })
@@ -93,11 +96,12 @@ export const google = async (req, res, next) => {
 
 export const signOut = async (req, res, next) => {
   try {
-    // ✅ FIXED: Explicitly matching clearance properties with the partitioned flag so it wipes clean
+    // ✅ FIXED: Matched exact options AND added root path option to clean completely on mobile
     res.clearCookie('access_token', {
       httpOnly: true,
       secure: true,
       sameSite: 'none',
+      path: '/',                            // 🚨 FIXED: Ensures clear matching rules
       partitioned: true
     });
     res.status(200).json('User has been logged out!');
