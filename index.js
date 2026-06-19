@@ -10,6 +10,7 @@ import userRouter from './routes/user.route.js';
 import authRouter from './routes/auth.route.js';
 import listingRouter from './routes/listing.route.js';
 import mailRouter from './routes/mail.route.js'; // REGISTERED: New contact mailing system route
+import videoRouter from './routes/video route.js'; // REGISTERED: New 6-second property shorts route
 
 // Load environment variables
 dotenv.config();
@@ -85,20 +86,6 @@ app.use(async (req, res, next) => {
       return next();
     }
 
-    if (!cached.promise) {
-      const opts = {
-        bufferCommands: false,
-        serverSelectionTimeoutMS: 8000, 
-      };
-
-      cached.promise = mongoose.connect(mongoURI, opts).then((mongooseInstance) => {
-        console.log('New MongoDB connection established successfully!');
-        return mongooseInstance;
-      });
-    }
-
-    cached.conn = await cached.promise;
-    next();
   } catch (error) {
     console.error('MongoDB Serverless Connection Error:', error);
     
@@ -122,7 +109,8 @@ app.use(async (req, res, next) => {
 app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/listing', listingRouter);
-app.use('/api/mail', mailRouter); // ACTIVATED: Handles contact form message routing safely
+app.use('/api/mail', mailRouter);   // ACTIVATED: Handles contact form message routing safely
+app.use('/api/video', videoRouter); // ACTIVATED: Handles client 6-second property video uploads and rules
 
 // Safety Catch
 app.use('/sign-in', authRouter);
