@@ -1,4 +1,4 @@
-  import express from 'express';
+ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
@@ -9,8 +9,8 @@ import path from 'path';
 import userRouter from './routes/user.route.js';
 import authRouter from './routes/auth.route.js';
 import listingRouter from './routes/listing.route.js';
-import mailRouter from './routes/mail.route.js'; // REGISTERED: New contact mailing system route
-import videoRouter from './routes/video route.js'; // REGISTERED: New 6-second property shorts route
+import mailRouter from './routes/mail.route.js'; 
+import videoRouter from './routes/video.route.js'; // ⚡ FIXED: Removed space from file string path to stop 500 error
 
 // Load environment variables
 dotenv.config();
@@ -39,44 +39,40 @@ app.use(cors({
       return callback(new Error(msg), false);
     }
   },
-  credentials: true, // Crucial: Allows cookies to pass from frontend to backend over the cloud
+  credentials: true, 
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Cookie'],
-  exposedHeaders: ['set-cookie'] // Instructs browsers it is safe to read cross-origin auth cookie responses
+  exposedHeaders: ['set-cookie'] 
 }));
 
-// --- FIXED: INTERCEPT BROWSER PREFLIGHT OPTIONS REQUESTS DYNAMICALLY FOR MOBILE COMPLIANCE ---
+// --- INTERCEPT BROWSER PREFLIGHT OPTIONS REQUESTS ---
 app.options('*', (req, res) => {
   const origin = req.headers.origin;
-  
-  // Ensure we dynamically echo the exact origin if allowed, preventing mobile browser rejections
   if (allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   } else {
-    // Default fallback to root domain if origin header is strangely missing
     res.setHeader('Access-Control-Allow-Origin', 'https://baylatproperties.ng');
   }
-  
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Cookie');
   return res.sendStatus(204);
 });
 
-// --- CORE MIDDLEWARE (Guaranteed to execute before routes) ---
-app.use(express.json());
+// --- CORE MIDDLEWARE WITH ENHANCED SIZE LIMITS ---
+app.use(express.json({ limit: '50mb' })); // Protects against heavy text stream crashes
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser()); 
 
 // --- SERVERLESS MONGOOSE CONNECTION CACHE ---
 const mongoURI = process.env.MONGO_URI || process.env.MONGO || "mongodb+srv://christutu5097_db_user:1eoGY4UmqG5qVaN9@baylat.ymmpknl.mongodb.net/?retryWrites=true&w=majority&appName=baylat";
 
 let cached = global.mongoose;
-
 if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
 }
 
-// Global middleware to guarantee database connectivity
+// Global middleware to guarantee database connectivity under serverless lifecycles
 app.use(async (req, res, next) => {
   try {
     mongoose.set('bufferCommands', false);
@@ -86,6 +82,14 @@ app.use(async (req, res, next) => {
       return next();
     }
 
+    if (!cached.promise) {
+      cached.promise = mongoose.connect(mongoURI).then((mongooseInstance) => {
+        return mongooseInstance;
+      });
+    }
+    
+    cached.conn = await cached.promise;
+    next();
   } catch (error) {
     console.error('MongoDB Serverless Connection Error:', error);
     
@@ -109,14 +113,13 @@ app.use(async (req, res, next) => {
 app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/listing', listingRouter);
-app.use('/api/mail', mailRouter);   // ACTIVATED: Handles contact form message routing safely
-app.use('/api/video', videoRouter); // ACTIVATED: Handles client 6-second property video uploads and rules
+app.use('/api/mail', mailRouter);   
+app.use('/api/video', videoRouter); 
 
 // Safety Catch
 app.use('/sign-in', authRouter);
 
-// --- UPDATED HEALTHCHECK PATH ---
-// Shift fallback health-check status tracker down into an isolated route segment
+// --- HEALTHCHECK PATH ---
 app.get('/api/healthcheck', (req, res) => {
   res.status(200).json({ status: "alive", message: "Baylat Properties Node.js Backend is operational!" });
 });
@@ -141,8 +144,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// --- FIXED: FORCED PORT BINDING TO ELIMINATE CPANEL PASSENGER 503 ERROR ---
-// Phusion Passenger completely requires the app to listen on a dynamically passed port.
+// --- FORCED PORT BINDING ---
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running beautifully on port ${PORT}`);

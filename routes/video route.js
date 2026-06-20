@@ -1,23 +1,14 @@
  import express from 'express';
-import { v2 as cloudinary } from 'cloudinary';
 import Video from '../model/video.js'; // Ensure this matches your video model file name
 
 const router = express.Router();
 
-// --- CLOUDINARY CONFIGURATION ---
-// This automatically pulls your credentials from your existing .env file
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
 // ==========================================
-// 1. ROUTE: UPLOAD A NEW 6-SECOND VIDEO
+// 1. ROUTE: SAVE A NEW REAL ESTATE SHORT CLIP URL
 // ==========================================
 router.post('/upload', async (req, res) => {
   try {
-    // A. Check the current video limit first
+    // A. Check the current video limit first (Max 6 clips)
     const totalVideos = await Video.countDocuments();
     if (totalVideos >= 6) {
       return res.status(400).json({ 
@@ -26,44 +17,35 @@ router.post('/upload', async (req, res) => {
       });
     }
 
-    const { title, videoDataUrl } = req.body; // Expecting the video file sent as a base64 string/DataURI from frontend
+    // B. Destructure the title and videoUrl sent from the frontend Firebase upload task
+    const { title, videoUrl } = req.body; 
 
-    if (!title || !videoDataUrl) {
-      return res.status(400).json({ success: false, message: 'Title and video file are required.' });
+    if (!title || !videoUrl) {
+      return res.status(400).json({ success: false, message: 'Title and video cloud URL are required.' });
     }
 
-    // B. Upload the video to Cloudinary
-    console.log('Uploading property video to Cloudinary...');
-    const uploadResponse = await cloudinary.uploader.upload(videoDataUrl, {
-      resource_type: 'video',
-      folder: 'baylat_property_shorts',
-      // Optional: enforce a 6-second clip limit restriction on upload if you want
-      duration_range: [0, 7] 
-    });
-
-    // C. Save the video details to MongoDB
+    // C. Save the video text metadata directly to MongoDB
     const newVideo = new Video({
       title: title,
-      videoUrl: uploadResponse.secure_url,
-      publicId: uploadResponse.public_id, // Saved so we can delete it later
+      videoUrl: videoUrl,
     });
 
     await newVideo.save();
 
     return res.status(201).json({ 
       success: true, 
-      message: 'Property video uploaded beautifully!', 
+      message: 'Property video short linked beautifully!', 
       video: newVideo 
     });
 
   } catch (error) {
-    console.error('Error uploading video:', error);
-    return res.status(500).json({ success: false, message: 'Server upload error.', error: error.message });
+    console.error('Error saving video stream metadata:', error);
+    return res.status(500).json({ success: false, message: 'Server database saving error.', error: error.message });
   }
 });
 
 // ==========================================
-// 2. ROUTE: GET ALL VIDEOS FOR THE FRONTEND
+// 2. ROUTE: GET ALL VIDEOS FOR THE HOME PAGE FEED
 // ==========================================
 router.get('/all', async (req, res) => {
   try {
@@ -75,22 +57,19 @@ router.get('/all', async (req, res) => {
 });
 
 // ==========================================
-// 3. ROUTE: DELETE A VIDEO (To free up space)
+// 3. ROUTE: DELETE A VIDEO SHORT (To free up slots)
 // ==========================================
 router.delete('/delete/:id', async (req, res) => {
   try {
     const video = await Video.findById(req.params.id);
     if (!video) {
-      return res.status(404).json({ success: false, message: 'Video not found.' });
+      return res.status(404).json({ success: false, message: 'Video asset not found in database.' });
     }
 
-    // A. Delete from Cloudinary using stored publicId
-    await cloudinary.uploader.destroy(video.publicId, { resource_type: 'video' });
-
-    // B. Delete from MongoDB
+    // Delete directly from MongoDB (Firebase cleanup can be handled or managed via Firebase expiration rules)
     await Video.findByIdAndDelete(req.params.id);
 
-    return res.status(200).json({ success: true, message: 'Video deleted successfully. Slot freed up!' });
+    return res.status(200).json({ success: true, message: 'Video slot freed up successfully!' });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
   }
