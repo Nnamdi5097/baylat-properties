@@ -10,7 +10,6 @@ export const test = (req, res) => {
 };
 
 export const updateUser = async (req, res, next) => {
-  // ✅ FIXED: Support checking both standard .id and Mongo ._id properties safely
   const userId = req.user._id || req.user.id;
   if (userId.toString() !== req.params.id)
     return next(errorHandler(401, 'You can only update your own account!'));
@@ -48,7 +47,6 @@ export const deleteUser = async (req, res, next) => {
   try {
     await User.findByIdAndDelete(req.params.id);
     
-    // ✅ FIXED: Added production cross-domain cookie flags to allow mobile browsers to successfully process the deletion path
     res.clearCookie('access_token', {
       httpOnly: true,
       secure: true,
@@ -57,14 +55,17 @@ export const deleteUser = async (req, res, next) => {
       partitioned: true
     });
     
-    res.status(200).json('User has been deleted!');
+    // ⚡ FIXED: Formatted response as a structured JSON object to stop parser crashes
+    return res.status(200).json({
+      success: true,
+      message: 'User has been deleted successfully!'
+    });
   } catch (error) {
     next(error);
   }
 };
 
 export const getUserListings = async (req, res, next) => {
-  // ✅ FIXED: Coerces identity tokens safely using .toString() to neutralize MongoDB object vs string reference bugs on mobile devices
   const userId = req.user._id || req.user.id;
   
   if (userId.toString() === req.params.id) {
