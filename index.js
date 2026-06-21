@@ -10,7 +10,7 @@ import userRouter from './routes/user.route.js';
 import authRouter from './routes/auth.route.js';
 import listingRouter from './routes/listing.route.js';
 import mailRouter from './routes/mail.route.js'; 
-import videoRouter from './routes/video.route.js'; // ⚡ FIXED: Removed space from file string path to stop 500 error
+import videoRouter from './routes/video.route.js'; 
 
 // Load environment variables
 dotenv.config();
@@ -18,12 +18,11 @@ dotenv.config();
 // Initialize Express app
 const app = express();
 
-// --- SECURE CORS CONFIGURATION ---
+// --- SECURE CORS CONFIGURATION (Updated to Active Live Deployments) ---
 const allowedOrigins = [
   'https://baylatproperties.ng',
   'https://www.baylatproperties.ng',
-  'https://baylat-properties-kmcg.vercel.app',
-  'https://baylat-properties-kmcg-git-main-nnamdi5097s-projects.vercel.app', 
+  'https://baylat-properties.vercel.app', // ⚡ FIXED: Using your active live backend URL
   'http://localhost:5173',
   'http://localhost:3000'
 ];
@@ -60,8 +59,8 @@ app.options('*', (req, res) => {
 });
 
 // --- CORE MIDDLEWARE WITH ENHANCED SIZE LIMITS ---
-app.use(express.json({ limit: '50mb' })); // Protects against heavy text stream crashes
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.json({ limit: '50mb' })); 
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser()); 
 
 // --- SERVERLESS MONGOOSE CONNECTION CACHE ---
@@ -72,7 +71,6 @@ if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
 }
 
-// Global middleware to guarantee database connectivity under serverless lifecycles
 app.use(async (req, res, next) => {
   try {
     mongoose.set('bufferCommands', false);
@@ -113,15 +111,15 @@ app.use(async (req, res, next) => {
 app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/listing', listingRouter);
-app.use('/api/mail', mailRouter);   
+app.use('/api/mail', mailRouter);    
 app.use('/api/video', videoRouter); 
 
 // Safety Catch
 app.use('/sign-in', authRouter);
 
 // --- HEALTHCHECK PATH ---
-app.get('/api/healthcheck', (req, res) => {
-  res.status(200).json({ status: "alive", message: "Baylat Properties Node.js Backend is operational!" });
+app.all('/', (req, res) => {
+  res.status(200).json({ status: "alive", message: "Baylat Properties Node.js Backend is fully operational on Vercel!" });
 });
 
 // Global Error Handling Middleware
@@ -144,10 +142,12 @@ app.use((err, req, res, next) => {
   });
 });
 
-// --- FORCED PORT BINDING ---
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server is running beautifully on port ${PORT}`);
-});
+// --- SERVERLESS OPTIMIZED PORT BINDING ---
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`Server is running beautifully on port ${PORT}`);
+  });
+}
 
 export default app;
