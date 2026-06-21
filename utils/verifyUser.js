@@ -2,12 +2,11 @@
 import { errorHandler } from './error.js';
 
 export const verifyToken = (req, res, next) => {
-  // Define trusted domains exactly matching your index.js infrastructure
+  // ⚡ FIXED: Updated to match your active live production infrastructure URLs
   const allowedOrigins = [
     'https://baylatproperties.ng',
     'https://www.baylatproperties.ng',
-    'https://baylat-properties-kmcg.vercel.app',
-    'https://baylat-properties-kmcg-git-main-nnamdi5097s-projects.vercel.app', 
+    'https://baylat-properties.vercel.app', 
     'http://localhost:5173',
     'http://localhost:3000'
   ];
