@@ -3,6 +3,15 @@ import bcryptjs from 'bcryptjs';
 import { errorHandler } from '../utils/error.js';
 import jwt from 'jsonwebtoken';
 
+// Unified cookie settings to ensure consistency across all auth actions
+const cookieOptions = {
+  httpOnly: true,
+  secure: true,      // Must be true for production (HTTPS)
+  sameSite: 'none',  // Required for cross-domain
+  path: '/',
+  maxAge: 30 * 24 * 60 * 60 * 1000, 
+};
+
 export const signup = async (req, res, next) => {
   const { username, email, password } = req.body;
   const hashedPassword = bcryptjs.hashSync(password, 10);
@@ -24,20 +33,11 @@ export const signin = async (req, res, next) => {
     const validPassword = bcryptjs.compareSync(password, validUser.password);
     if (!validPassword) return next(errorHandler(401, 'Wrong credentials!'));
     
-    // ⚡ FALLBACK: Ensures JWT_SECRET string exists to avoid runtime 500 error crashes
     const jwtSecret = process.env.JWT_SECRET || 'fallback_secret_key_for_production_safety';
     const token = jwt.sign({ id: validUser._id }, jwtSecret);
     const { password: pass, ...rest } = validUser._doc;
     
-    res
-      .cookie('access_token', token, { 
-        httpOnly: true,
-        secure: true, 
-        sameSite: 'none',
-        path: '/',                          
-        maxAge: 30 * 24 * 60 * 60 * 1000,   
-        partitioned: true
-      })
+    res.cookie('access_token', token, cookieOptions)
       .status(200)
       .json(rest);
   } catch (error) {
@@ -54,26 +54,14 @@ export const google = async (req, res, next) => {
       const token = jwt.sign({ id: user._id }, jwtSecret);
       const { password: pass, ...rest } = user._doc;
       
-      res
-        .cookie('access_token', token, { 
-          httpOnly: true,
-          secure: true, 
-          sameSite: 'none',
-          path: '/',                        
-          maxAge: 30 * 24 * 60 * 60 * 1000,
-          partitioned: true
-        })
+      res.cookie('access_token', token, cookieOptions)
         .status(200)
         .json(rest);
     } else {
-      const generatedPassword =
-        Math.random().toString(36).slice(-8) +
-        Math.random().toString(36).slice(-8);
+      const generatedPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
       const hashedPassword = bcryptjs.hashSync(generatedPassword, 10);
       const newUser = new User({
-        username:
-          req.body.name.split(' ').join('').toLowerCase() +
-          Math.random().toString(36).slice(-4),
+        username: req.body.name.split(' ').join('').toLowerCase() + Math.random().toString(36).slice(-4),
         email: req.body.email,
         password: hashedPassword,
         avatar: req.body.photo,
@@ -83,15 +71,7 @@ export const google = async (req, res, next) => {
       const token = jwt.sign({ id: newUser._id }, jwtSecret);
       const { password: pass, ...rest } = newUser._doc;
       
-      res
-        .cookie('access_token', token, { 
-          httpOnly: true,
-          secure: true, 
-          sameSite: 'none',
-          path: '/',                        
-          maxAge: 30 * 24 * 60 * 60 * 1000,
-          partitioned: true
-        })
+      res.cookie('access_token', token, cookieOptions)
         .status(200)
         .json(rest);
     }
@@ -100,21 +80,10 @@ export const google = async (req, res, next) => {
   }
 };
 
-// ⚡ COMPLETELY UNIFIED: Clean casing and absolute object return handling to avoid 500 drops
 export const signOut = async (req, res, next) => {
   try {
-    res.clearCookie('access_token', {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      path: '/',                                            
-      partitioned: true
-    });
-    
-    return res.status(200).json({
-      success: true,
-      message: 'User has been logged out successfully!'
-    });
+    res.clearCookie('access_token', cookieOptions);
+    return res.status(200).json({ success: true, message: 'User has been logged out successfully!' });
   } catch (error) {
     next(error);
   }
