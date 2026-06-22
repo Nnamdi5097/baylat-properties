@@ -1,5 +1,5 @@
  import express from 'express';
-// ✅ FIXED: Corrected spelling to import from the exact model file location 
+// ✅ FIXED: Corrected spelling to import from the plural 'models' folder 
 import Video from '../models/video.js'; 
 
 const router = express.Router();
