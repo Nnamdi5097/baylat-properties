@@ -1,13 +1,16 @@
  import express from 'express';
 // ✅ FIXED: Corrected spelling to import from the plural 'models' folder 
 import Video from '../models/video.js'; 
+// ✅ ADDED: Import your authentication middleware to protect admin routes
+import { verifyToken } from '../utils/verifyUser.js'; 
 
 const router = express.Router();
 
 // ==========================================
 // 1. ROUTE: SAVE A NEW REAL ESTATE SHORT CLIP URL WITH CLOUDINARY PUBLIC_ID
 // ==========================================
-router.post('/upload', async (req, res) => {
+// ✅ ADDED: verifyToken middleware to protect this route from unauthorized uploads
+router.post('/upload', verifyToken, async (req, res) => {
   try {
     const totalVideos = await Video.countDocuments();
     if (totalVideos >= 6) {
@@ -49,6 +52,7 @@ router.post('/upload', async (req, res) => {
 // ==========================================
 // 2. ROUTE: GET ALL VIDEOS FOR THE HOME PAGE FEED
 // ==========================================
+// ✅ NOTE: No verifyToken here! The public needs to see these on the homepage.
 router.get('/all', async (req, res) => {
   try {
     const videos = await Video.find().sort({ createdAt: -1 });
@@ -61,7 +65,8 @@ router.get('/all', async (req, res) => {
 // ==========================================
 // 3. ROUTE: DELETE A VIDEO SHORT
 // ==========================================
-router.delete('/delete/:id', async (req, res) => {
+// ✅ ADDED: verifyToken middleware to prevent unauthorized deletions
+router.delete('/delete/:id', verifyToken, async (req, res) => {
   try {
     const video = await Video.findById(req.params.id);
     if (!video) {
