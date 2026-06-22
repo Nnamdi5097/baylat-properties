@@ -1,14 +1,13 @@
  import express from 'express';
-import Video from '../model/video.js'; // Ensure this matches your video model file name
+import Video from '../models/video.model.js'; 
 
 const router = express.Router();
 
 // ==========================================
-// 1. ROUTE: SAVE A NEW REAL ESTATE SHORT CLIP URL
+// 1. ROUTE: SAVE A NEW REAL ESTATE SHORT CLIP URL WITH CLOUDINARY PUBLIC_ID
 // ==========================================
 router.post('/upload', async (req, res) => {
   try {
-    // A. Check the current video limit first (Max 6 clips)
     const totalVideos = await Video.countDocuments();
     if (totalVideos >= 6) {
       return res.status(400).json({ 
@@ -17,17 +16,21 @@ router.post('/upload', async (req, res) => {
       });
     }
 
-    // B. Destructure the title and videoUrl sent from the frontend Firebase upload task
-    const { title, videoUrl } = req.body; 
+    // ⚡ FIXED: Added publicId to destructuring (Cloudinary provides this on successful upload)
+    const { title, videoUrl, publicId } = req.body; 
 
-    if (!title || !videoUrl) {
-      return res.status(400).json({ success: false, message: 'Title and video cloud URL are required.' });
+    if (!title || !videoUrl || !publicId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Title, video URL, and Cloudinary public ID are all required.' 
+      });
     }
 
-    // C. Save the video text metadata directly to MongoDB
+    // ⚡ FIXED: Added publicId directly to the document payload instantiation loop
     const newVideo = new Video({
-      title: title,
-      videoUrl: videoUrl,
+      title,
+      videoUrl,
+      publicId,
     });
 
     await newVideo.save();
@@ -49,7 +52,7 @@ router.post('/upload', async (req, res) => {
 // ==========================================
 router.get('/all', async (req, res) => {
   try {
-    const videos = await Video.find().sort({ createdAt: -1 }); // Newest videos first
+    const videos = await Video.find().sort({ createdAt: -1 });
     return res.status(200).json({ success: true, videos });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
@@ -57,7 +60,7 @@ router.get('/all', async (req, res) => {
 });
 
 // ==========================================
-// 3. ROUTE: DELETE A VIDEO SHORT (To free up slots)
+// 3. ROUTE: DELETE A VIDEO SHORT
 // ==========================================
 router.delete('/delete/:id', async (req, res) => {
   try {
@@ -66,10 +69,12 @@ router.delete('/delete/:id', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Video asset not found in database.' });
     }
 
-    // Delete directly from MongoDB (Firebase cleanup can be handled or managed via Firebase expiration rules)
     await Video.findByIdAndDelete(req.params.id);
 
-    return res.status(200).json({ success: true, message: 'Video slot freed up successfully!' });
+    return res.status(200).json({ 
+      success: true, 
+      message: 'Video slot freed up successfully! Remember to clear publicId ' + video.publicId + ' from Cloudinary if needed.' 
+    });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
   }
