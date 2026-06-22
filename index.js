@@ -31,7 +31,8 @@ const corsOptions = {
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    // ⚡ FIXED: Allow explicitly matching origins OR any preview deployment domain ending with .vercel.app
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
       return callback(null, true);
     } else {
       const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
@@ -48,7 +49,7 @@ const corsOptions = {
 // Apply CORS configurations globally
 app.use(cors(corsOptions));
 
-// --- ⚡ FIXED: INTERCEPT BROWSER PREFLIGHT OPTIONS AUTOMATICALLY WITH CORS MIDDLEWARE ---
+// --- INTERCEPT BROWSER PREFLIGHT OPTIONS AUTOMATICALLY WITH CORS MIDDLEWARE ---
 app.options('*', cors(corsOptions));
 
 // --- CORE MIDDLEWARE WITH ENHANCED SIZE LIMITS ---
@@ -85,7 +86,7 @@ app.use(async (req, res, next) => {
     console.error('MongoDB Serverless Connection Error:', error);
     
     const origin = req.headers.origin;
-    if (allowedOrigins.includes(origin)) {
+    if (origin && (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app'))) {
       res.setHeader('Access-Control-Allow-Origin', origin);
     } else {
       res.setHeader('Access-Control-Allow-Origin', 'https://baylatproperties.ng');
@@ -121,7 +122,7 @@ app.use((err, req, res, next) => {
   const message = err.message || 'Internal Server Error';
 
   const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
+  if (origin && (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app'))) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   } else {
     res.setHeader('Access-Control-Allow-Origin', 'https://baylatproperties.ng');
