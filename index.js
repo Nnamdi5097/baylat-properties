@@ -1,9 +1,8 @@
- import express from 'express';
+import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import path from 'path';
 
 // --- ALL ROUTE IMPORTS HOISTED CLEANLY AT THE TOP ---
 import userRouter from './routes/user.route.js';
@@ -18,7 +17,7 @@ dotenv.config();
 // Initialize Express app
 const app = express();
 
-// --- SECURE CORS CONFIGURATION (Updated to Active Live Deployments) ---
+// --- SECURE CORS CONFIGURATION ---
 const allowedOrigins = [
   'https://baylatproperties.ng',
   'https://www.baylatproperties.ng',
@@ -43,13 +42,11 @@ const corsOptions = {
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Cookie'],
   exposedHeaders: ['set-cookie'],
-  optionsSuccessStatus: 204 // Handshakes respond beautifully across domains
+  optionsSuccessStatus: 204 
 };
 
 // Apply CORS configurations globally
 app.use(cors(corsOptions));
-
-// --- INTERCEPT BROWSER PREFLIGHT OPTIONS AUTOMATICALLY WITH CORS MIDDLEWARE ---
 app.options('*', cors(corsOptions));
 
 // --- CORE MIDDLEWARE WITH ENHANCED SIZE LIMITS ---
@@ -57,29 +54,44 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser()); 
 
-// --- ⚡ FIXED: SERVERLESS MONGOOSE CONNECTION TIMEOUT INTERCEPTOR ---
-const mongoURI = process.env.MONGO_URI || process.env.MONGO || "mongodb+srv://christutu5097_db_user:1eoGY4UmqG5qVaN9@baylat.ymmpknl.mongodb.net/?retryWrites=true&w=majority&appName=baylat";
+// --- ⚡ FIXED: SINGLETON SERVERLESS MONGOOSE CONNECTION CACHE ---
+let connectionPromise = null; // Track the connection attempt, not just the active state
 
 app.use(async (req, res, next) => {
-  // If connection state is already active (1), bypass immediately to save time
+  // If connection state is already active (1), bypass immediately
   if (mongoose.connection.readyState === 1) {
     return next();
   }
 
-  try {
+  // Ensure environment variables are strictly used for security
+  const mongoURI = process.env.MONGO || process.env.MONGO_URI;
+  if (!mongoURI) {
+    return res.status(500).json({ success: false, message: "Server configuration missing database credentials." });
+  }
+
+  // If a connection is not already in progress, start one and save the promise
+  if (!connectionPromise) {
     mongoose.set('bufferCommands', false);
     mongoose.set('strictQuery', true);
 
-    // Establish dynamic client connection pooled for serverless states
-    await mongoose.connect(mongoURI, {
-      serverSelectionTimeoutMS: 5000, // 5 seconds constraint eliminates 503 function hanging completely
+    connectionPromise = mongoose.connect(mongoURI, {
+      serverSelectionTimeoutMS: 5000, 
+      maxPoolSize: 10, // Optimize for multiple simultaneous Vercel requests
+    }).then(() => {
+      console.log('🚀 MongoDB connected successfully in serverless environment');
+    }).catch((error) => {
+      connectionPromise = null; // Reset on failure so the next request can try again
+      console.error('MongoDB Serverless Connection Error:', error);
+      throw error;
     });
-    
+  }
+
+  try {
+    // All simultaneous requests will wait for this single promise to resolve!
+    await connectionPromise;
     next();
   } catch (error) {
-    console.error('MongoDB Serverless Connection Error:', error);
-    
-    // Explicitly safe fallback CORS tracking setup for error pipeline
+    // Safe fallback CORS tracking setup for error pipeline
     const origin = req.headers.origin;
     if (origin && (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app'))) {
       res.setHeader('Access-Control-Allow-Origin', origin);
@@ -139,4 +151,4 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-export default app;
+export default app; 
