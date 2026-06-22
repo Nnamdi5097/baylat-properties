@@ -20,12 +20,18 @@ const VideoSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    userRef: {
+      type: String,
+      required: false, // Future-proofs your DB to track which admin uploaded the file
+    }
   },
   {
-    // This automatically adds 'createdAt' and 'updatedAt' timestamps to your database
+    // Automatically adds 'createdAt' and 'updatedAt' timestamps
     timestamps: true, 
   }
 );
 
-// This ensures Mongoose doesn't compile the model multiple times during Next.js hot reloads
-export default mongoose.models.Video || mongoose.model('Video', VideoSchema);
+// Ensures Mongoose doesn't compile the model multiple times during server reloads
+const Video = mongoose.models.Video || mongoose.model('Video', VideoSchema);
+
+export default Video;
