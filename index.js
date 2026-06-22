@@ -22,12 +22,12 @@ const app = express();
 const allowedOrigins = [
   'https://baylatproperties.ng',
   'https://www.baylatproperties.ng',
-  'https://baylat-properties.vercel.app', // ⚡ FIXED: Using your active live backend URL
+  'https://baylat-properties.vercel.app',
   'http://localhost:5173',
   'http://localhost:3000'
 ];
 
-app.use(cors({
+const corsOptions = {
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
     
@@ -41,26 +41,19 @@ app.use(cors({
   credentials: true, 
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Cookie'],
-  exposedHeaders: ['set-cookie'] 
-}));
+  exposedHeaders: ['set-cookie'],
+  optionsSuccessStatus: 204 // Handshakes respond beautifully across domains
+};
 
-// --- INTERCEPT BROWSER PREFLIGHT OPTIONS REQUESTS ---
-app.options('*', (req, res) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else {
-    res.setHeader('Access-Control-Allow-Origin', 'https://baylatproperties.ng');
-  }
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Cookie');
-  return res.sendStatus(204);
-});
+// Apply CORS configurations globally
+app.use(cors(corsOptions));
+
+// --- ⚡ FIXED: INTERCEPT BROWSER PREFLIGHT OPTIONS AUTOMATICALLY WITH CORS MIDDLEWARE ---
+app.options('*', cors(corsOptions));
 
 // --- CORE MIDDLEWARE WITH ENHANCED SIZE LIMITS ---
 app.use(express.json({ limit: '50mb' })); 
-  app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser()); 
 
 // --- SERVERLESS MONGOOSE CONNECTION CACHE ---

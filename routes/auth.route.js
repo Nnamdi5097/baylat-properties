@@ -3,11 +3,6 @@ import { google, signOut, signin, signup } from '../controllers/auth.controller.
 
 const router = express.Router();
 
-// ✅ ADDED: Preflight routing handlers to make sure CORS preflight requests clear instantly
-router.options("/signup", (req, res) => res.sendStatus(204));
-router.options("/signin", (req, res) => res.sendStatus(204));
-router.options("/google", (req, res) => res.sendStatus(204));
-
 // Core Authentication Routes
 router.post("/signup", signup);
 router.post("/signin", signin);
