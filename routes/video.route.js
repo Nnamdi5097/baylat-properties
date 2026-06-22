@@ -1,5 +1,6 @@
  import express from 'express';
-import Video from '../models/video.model.js'; 
+// ✅ FIXED: Corrected spelling to import from the exact model file location 
+import Video from '../models/video.js'; 
 
 const router = express.Router();
 
@@ -16,7 +17,6 @@ router.post('/upload', async (req, res) => {
       });
     }
 
-    // ⚡ FIXED: Added publicId to destructuring (Cloudinary provides this on successful upload)
     const { title, videoUrl, publicId } = req.body; 
 
     if (!title || !videoUrl || !publicId) {
@@ -26,7 +26,6 @@ router.post('/upload', async (req, res) => {
       });
     }
 
-    // ⚡ FIXED: Added publicId directly to the document payload instantiation loop
     const newVideo = new Video({
       title,
       videoUrl,
