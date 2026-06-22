@@ -31,7 +31,7 @@ const corsOptions = {
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
     
-    // ⚡ FIXED: Allow explicitly matching origins OR any preview deployment domain ending with .vercel.app
+    // Allow explicitly matching origins OR any preview deployment domain ending with .vercel.app
     if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
       return callback(null, true);
     } else {
@@ -57,34 +57,29 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser()); 
 
-// --- SERVERLESS MONGOOSE CONNECTION CACHE ---
+// --- ⚡ FIXED: SERVERLESS MONGOOSE CONNECTION TIMEOUT INTERCEPTOR ---
 const mongoURI = process.env.MONGO_URI || process.env.MONGO || "mongodb+srv://christutu5097_db_user:1eoGY4UmqG5qVaN9@baylat.ymmpknl.mongodb.net/?retryWrites=true&w=majority&appName=baylat";
 
-let cached = global.mongoose;
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
-}
-
 app.use(async (req, res, next) => {
+  // If connection state is already active (1), bypass immediately to save time
+  if (mongoose.connection.readyState === 1) {
+    return next();
+  }
+
   try {
     mongoose.set('bufferCommands', false);
     mongoose.set('strictQuery', true);
 
-    if (cached.conn) {
-      return next();
-    }
-
-    if (!cached.promise) {
-      cached.promise = mongoose.connect(mongoURI).then((mongooseInstance) => {
-        return mongooseInstance;
-      });
-    }
+    // Establish dynamic client connection pooled for serverless states
+    await mongoose.connect(mongoURI, {
+      serverSelectionTimeoutMS: 5000, // 5 seconds constraint eliminates 503 function hanging completely
+    });
     
-    cached.conn = await cached.promise;
     next();
   } catch (error) {
     console.error('MongoDB Serverless Connection Error:', error);
     
+    // Explicitly safe fallback CORS tracking setup for error pipeline
     const origin = req.headers.origin;
     if (origin && (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app'))) {
       res.setHeader('Access-Control-Allow-Origin', origin);
@@ -95,7 +90,7 @@ app.use(async (req, res, next) => {
 
     return res.status(500).json({
       success: false,
-      message: "Database connection failed under heavy serverless traffic.",
+      message: "Database connection failed or timed out under heavy serverless traffic.",
       error: error.message
     });
   }
