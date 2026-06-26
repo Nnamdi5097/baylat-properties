@@ -1,4 +1,4 @@
-import express from 'express';
+ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
@@ -151,4 +151,4 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-export default app; 
+export default app;
