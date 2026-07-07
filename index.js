@@ -14,7 +14,7 @@ import videoRouter from './routes/video.route.js';
 
 dotenv.config();
 
-// Connect to MongoDB (Ensure MONGO_URI is in Vercel Settings!)
+// Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch((err) => console.log(err));
@@ -22,11 +22,16 @@ mongoose.connect(process.env.MONGO_URI)
 const app = express();
 
 // --- CORS & MIDDLEWARE ---
-// Explicitly allow your frontend domain to prevent the CORS error
-app.use(cors({ 
+// 1. Configure CORS
+const corsOptions = { 
   origin: ['https://baylatproperties.ng'], 
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true 
-}));
+};
+
+app.use(cors(corsOptions));
+// 2. Explicitly handle preflight requests
+app.options('*', cors(corsOptions));
 
 app.use(express.json({ limit: '50mb' })); 
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -45,7 +50,7 @@ app.use('/api/listing', listingRouter);
 app.use('/api/mail', mailRouter);    
 app.use('/api/video', videoRouter); 
 
-// Error Handling Middleware (Helps catch 500 errors)
+// Error Handling Middleware
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
