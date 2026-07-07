@@ -5,12 +5,12 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import fileUpload from 'express-fileupload';
 
-// Route Imports
-import userRouter from './routes/user.route.js';
-import authRouter from './routes/auth.route.js';
-import listingRouter from './routes/listing.route.js';
-import mailRouter from './routes/mail.route.js'; 
-import videoRouter from './routes/video.route.js'; 
+// UPDATED: Note the "../" to look in the parent folder for your routes
+import userRouter from '../routes/user.route.js';
+import authRouter from '../routes/auth.route.js';
+import listingRouter from '../routes/listing.route.js';
+import mailRouter from '../routes/mail.route.js'; 
+import videoRouter from '../routes/video.route.js'; 
 
 dotenv.config();
 
@@ -22,7 +22,6 @@ mongoose.connect(process.env.MONGO_URI)
 const app = express();
 
 // --- CORS & MIDDLEWARE ---
-// 1. Configure CORS
 const corsOptions = { 
   origin: ['https://baylatproperties.ng'], 
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -30,14 +29,12 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-// 2. Explicitly handle preflight requests
 app.options('*', cors(corsOptions));
 
 app.use(express.json({ limit: '50mb' })); 
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser()); 
 
-// File Upload Middleware
 app.use(fileUpload({
   useTempFiles: true,
   tempFileDir: '/tmp/'
