@@ -5,7 +5,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import fileUpload from 'express-fileupload';
 
-// UPDATED: Note the "../" to look in the parent folder for your routes
+// Route Imports
 import userRouter from '../routes/user.route.js';
 import authRouter from '../routes/auth.route.js';
 import listingRouter from '../routes/listing.route.js';
@@ -29,7 +29,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+app.options('*', cors(corsOptions)); // Handle preflight
 
 app.use(express.json({ limit: '50mb' })); 
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -40,6 +40,15 @@ app.use(fileUpload({
   tempFileDir: '/tmp/'
 }));
 
+// --- HEALTH CHECK ROUTE ---
+// This replaces "Cannot GET /" with a success message
+app.get('/', (req, res) => {
+  res.status(200).json({ 
+    success: true, 
+    message: 'Server is running and connected to MongoDB!' 
+  });
+});
+
 // --- ROUTE LINKING ---
 app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter);
@@ -47,7 +56,7 @@ app.use('/api/listing', listingRouter);
 app.use('/api/mail', mailRouter);    
 app.use('/api/video', videoRouter); 
 
-// Error Handling Middleware
+// --- ERROR HANDLING ---
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
