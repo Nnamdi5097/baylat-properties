@@ -1,12 +1,24 @@
  import express from 'express';
 import Video from '../models/video.js'; 
 import { verifyToken } from '../utils/verifyUser.js'; 
-import cloudinary from '../utils/cloudinary.js'; // Import your configured cloudinary
+import cloudinary from '../utils/cloudinary.js';
 
 const router = express.Router();
 
 // ==========================================
-// 1. ROUTE: UPLOAD A NEW REAL ESTATE VIDEO
+// 1. GET ALL VIDEOS (Fixed 404 Issue)
+// ==========================================
+router.get('/all', async (req, res) => {
+  try {
+    const videos = await Video.find().sort({ createdAt: -1 });
+    res.status(200).json({ success: true, videos });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch videos.' });
+  }
+});
+
+// ==========================================
+// 2. UPLOAD A NEW VIDEO
 // ==========================================
 router.post('/upload', verifyToken, async (req, res) => {
   try {
@@ -18,19 +30,14 @@ router.post('/upload', verifyToken, async (req, res) => {
       });
     }
 
-    // 1. You need the file from the request
-    // This assumes you are using a middleware like 'express-fileupload' or 'multer'
-    // If you are sending the file from the frontend, it will be in req.files
-    const file = req.files.video; 
+    const file = req.files?.video; 
+    if (!file) return res.status(400).json({ success: false, message: 'No video file provided.' });
 
-    // 2. Upload to Cloudinary
-    // The 'resource_type: "video"' is the key part to fix your error
     const result = await cloudinary.uploader.upload(file.tempFilePath, {
       resource_type: "video", 
       folder: "baylat_properties"
     });
 
-    // 3. Save to Database
     const newVideo = new Video({
       title: req.body.title,
       videoUrl: result.secure_url,
@@ -41,17 +48,32 @@ router.post('/upload', verifyToken, async (req, res) => {
 
     return res.status(201).json({ 
       success: true, 
-      message: 'Property video uploaded and linked successfully!', 
+      message: 'Property video uploaded successfully!', 
       video: newVideo 
     });
-
   } catch (error) {
-    console.error('Error during video upload:', error);
-    // If the error message is "Unauthorized", check your Vercel Env Variables!
     return res.status(500).json({ success: false, message: 'Upload failed.', error: error.message });
   }
 });
 
-// ... (Keep your existing GET /all and DELETE routes as they are) ...
+// ==========================================
+// 3. DELETE A VIDEO
+// ==========================================
+router.delete('/delete/:id', verifyToken, async (req, res) => {
+  try {
+    const video = await Video.findById(req.params.id);
+    if (!video) return res.status(404).json({ success: false, message: 'Video not found.' });
+
+    // Remove from Cloudinary
+    await cloudinary.uploader.destroy(video.publicId, { resource_type: "video" });
+
+    // Remove from Database
+    await Video.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({ success: true, message: 'Video deleted successfully.' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Delete failed.' });
+  }
+});
 
 export default router;
