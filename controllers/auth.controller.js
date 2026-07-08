@@ -3,13 +3,12 @@ import bcryptjs from 'bcryptjs';
 import { errorHandler } from '../utils/error.js';
 import jwt from 'jsonwebtoken';
 
-// Unified cookie settings to ensure consistency across all auth actions
 const cookieOptions = {
   httpOnly: true,
-  secure: true,      // Must be true for production (HTTPS)
-  sameSite: 'none',  // Required for cross-domain
+  secure: true,
+  sameSite: 'none',
   path: '/',
-  maxAge: 30 * 24 * 60 * 60 * 1000, 
+  maxAge: 30 * 24 * 60 * 60 * 1000,
 };
 
 export const signup = async (req, res, next) => {
@@ -29,14 +28,15 @@ export const signin = async (req, res, next) => {
   try {
     const validUser = await User.findOne({ email });
     if (!validUser) return next(errorHandler(404, 'User not found!'));
-    
+
     const validPassword = bcryptjs.compareSync(password, validUser.password);
     if (!validPassword) return next(errorHandler(401, 'Wrong credentials!'));
-    
-    const jwtSecret = process.env.JWT_SECRET || 'fallback_secret_key_for_production_safety';
-    const token = jwt.sign({ id: validUser._id }, jwtSecret);
+
+    const jwtSecret = process.env.JWT_SECRET;
+    // UPDATED: Included isAdmin in the token payload
+    const token = jwt.sign({ id: validUser._id, isAdmin: validUser.isAdmin }, jwtSecret);
     const { password: pass, ...rest } = validUser._doc;
-    
+
     res.cookie('access_token', token, cookieOptions)
       .status(200)
       .json(rest);
@@ -48,12 +48,13 @@ export const signin = async (req, res, next) => {
 export const google = async (req, res, next) => {
   try {
     const user = await User.findOne({ email: req.body.email });
-    const jwtSecret = process.env.JWT_SECRET || 'fallback_secret_key_for_production_safety';
+    const jwtSecret = process.env.JWT_SECRET;
 
     if (user) {
-      const token = jwt.sign({ id: user._id }, jwtSecret);
+      // UPDATED: Included isAdmin in the token payload
+      const token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, jwtSecret);
       const { password: pass, ...rest } = user._doc;
-      
+
       res.cookie('access_token', token, cookieOptions)
         .status(200)
         .json(rest);
@@ -67,10 +68,11 @@ export const google = async (req, res, next) => {
         avatar: req.body.photo,
       });
       await newUser.save();
-      
-      const token = jwt.sign({ id: newUser._id }, jwtSecret);
+
+      // UPDATED: Included isAdmin in the token payload
+      const token = jwt.sign({ id: newUser._id, isAdmin: newUser.isAdmin }, jwtSecret);
       const { password: pass, ...rest } = newUser._doc;
-      
+
       res.cookie('access_token', token, cookieOptions)
         .status(200)
         .json(rest);
