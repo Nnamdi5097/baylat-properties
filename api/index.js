@@ -5,6 +5,8 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import fileUpload from 'express-fileupload';
 
+// If your routes folder is at the root, '../routes/...' is correct.
+// However, ensure your package.json has "type": "module"
 import userRouter from '../routes/user.route.js';
 import authRouter from '../routes/auth.route.js';
 import listingRouter from '../routes/listing.route.js';
@@ -15,15 +17,15 @@ dotenv.config();
 
 const app = express();
 
-// --- DATABASE CONNECTION (Optimized for Serverless) ---
+// --- DATABASE CONNECTION ---
 const connectDB = async () => {
-  if (mongoose.connections[0].readyState) return;
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log('Connected to MongoDB');
-  } catch (err) {
-    console.error('MongoDB connection error:', err);
+  if (mongoose.connection.readyState >= 1) return;
+  
+  if (!process.env.MONGO_URI) {
+    throw new Error("MONGO_URI environment variable is not defined");
   }
+
+  return mongoose.connect(process.env.MONGO_URI);
 };
 
 // --- CORS & MIDDLEWARE ---
@@ -47,18 +49,20 @@ app.use(fileUpload({
   tempFileDir: '/tmp/'
 }));
 
-// --- ROUTE MIDDLEWARE (Ensures DB is connected before processing) ---
+// --- DATABASE MIDDLEWARE ---
 app.use(async (req, res, next) => {
-  await connectDB();
-  next();
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error("DB Connection Error:", err);
+    res.status(500).json({ success: false, message: "Database connection failed" });
+  }
 });
 
-// --- HEALTH CHECK ---
-app.get('/', (req, res) => {
-  res.status(200).json({ success: true, message: 'Server is running!' });
-});
+// --- ROUTES ---
+app.get('/', (req, res) => res.status(200).json({ success: true, message: 'Server is running!' }));
 
-// --- ROUTE LINKING ---
 app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/listing', listingRouter);
@@ -68,8 +72,7 @@ app.use('/api/video', videoRouter);
 // --- ERROR HANDLING ---
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
-  const message = err.message || 'Internal Server Error';
-  return res.status(statusCode).json({ success: false, statusCode, message });
+  return res.status(statusCode).json({ success: false, statusCode, message: err.message });
 });
 
 export default app;
