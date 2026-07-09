@@ -15,22 +15,34 @@ dotenv.config();
 
 const app = express();
 
-// --- CORS & MIDDLEWARE (CRITICAL: Must be first) ---
+// --- CRITICAL CORS FIX: MANUAL HEADER INJECTION ---
+app.use((req, res, next) => {
+  const allowedOrigins = ['https://baylatproperties.ng', 'https://www.baylatproperties.ng'];
+  const origin = req.headers.origin;
+  
+  if (allowedOrigins.includes(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+  }
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  
+  // Intercept OPTIONS method for pre-flight
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
+
+// Standard CORS setup
 const corsOptions = { 
-  origin: [
-    'https://baylatproperties.ng', 
-    'https://www.baylatproperties.ng'
-  ],
+  origin: ['https://baylatproperties.ng', 'https://www.baylatproperties.ng'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept', 'Cookie'],
-  optionsSuccessStatus: 200 
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept', 'Cookie']
 };
 
-// 1. Enable CORS for all routes
 app.use(cors(corsOptions));
-// 2. Explicitly handle pre-flight OPTIONS requests
-app.options('*', cors(corsOptions));
 
 app.use(express.json({ limit: '50mb' })); 
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
