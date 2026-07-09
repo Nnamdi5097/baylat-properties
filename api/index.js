@@ -15,34 +15,28 @@ dotenv.config();
 
 const app = express();
 
-// --- CRITICAL CORS FIX: MANUAL HEADER INJECTION ---
+// --- DEBUGGING ---
+console.log("SERVER INITIALIZING...");
+console.log("MONGO_URI present:", !!process.env.MONGO_URI);
+
+// --- CRITICAL CORS FIX ---
 app.use((req, res, next) => {
   const allowedOrigins = ['https://baylatproperties.ng', 'https://www.baylatproperties.ng'];
   const origin = req.headers.origin;
-  
   if (allowedOrigins.includes(origin)) {
     res.header("Access-Control-Allow-Origin", origin);
   }
   res.header("Access-Control-Allow-Credentials", "true");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  
-  // Intercept OPTIONS method for pre-flight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
   next();
 });
 
-// Standard CORS setup
-const corsOptions = { 
+app.use(cors({
   origin: ['https://baylatproperties.ng', 'https://www.baylatproperties.ng'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept', 'Cookie']
-};
-
-app.use(cors(corsOptions));
+  credentials: true
+}));
 
 app.use(express.json({ limit: '50mb' })); 
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -55,11 +49,15 @@ app.use(fileUpload({
 
 // --- DATABASE CONNECTION ---
 const connectDB = async () => {
-  if (mongoose.connection.readyState >= 1) return;
-  if (!process.env.MONGO_URI) {
-    throw new Error("MONGO_URI environment variable is not defined");
+  try {
+    if (mongoose.connection.readyState >= 1) return;
+    if (!process.env.MONGO_URI) throw new Error("MONGO_URI not defined");
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log("DATABASE CONNECTED SUCCESSFULLY");
+  } catch (err) {
+    console.error("DB CONNECTION FAILED:", err.message);
+    throw err;
   }
-  return mongoose.connect(process.env.MONGO_URI);
 };
 
 // --- DATABASE MIDDLEWARE ---
@@ -68,14 +66,12 @@ app.use(async (req, res, next) => {
     await connectDB();
     next();
   } catch (err) {
-    console.error("DB Connection Error:", err);
     res.status(500).json({ success: false, message: "Database connection failed" });
   }
 });
 
 // --- ROUTES ---
 app.get('/', (req, res) => res.status(200).json({ success: true, message: 'Server is running!' }));
-
 app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/listing', listingRouter);
@@ -84,6 +80,7 @@ app.use('/api/video', videoRouter);
 
 // --- ERROR HANDLING ---
 app.use((err, req, res, next) => {
+  console.error("GLOBAL ERROR HANDLER:", err);
   const statusCode = err.statusCode || 500;
   return res.status(statusCode).json({ 
     success: false, 
