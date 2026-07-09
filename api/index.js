@@ -15,17 +15,7 @@ dotenv.config();
 
 const app = express();
 
-// --- DATABASE CONNECTION ---
-const connectDB = async () => {
-  if (mongoose.connection.readyState >= 1) return;
-  if (!process.env.MONGO_URI) {
-    throw new Error("MONGO_URI environment variable is not defined");
-  }
-  return mongoose.connect(process.env.MONGO_URI);
-};
-
-// --- CORS & MIDDLEWARE ---
-// Updated to be more flexible for your client's browser
+// --- CORS & MIDDLEWARE (CRITICAL: Must be first) ---
 const corsOptions = { 
   origin: [
     'https://baylatproperties.ng', 
@@ -37,8 +27,10 @@ const corsOptions = {
   optionsSuccessStatus: 200 
 };
 
+// 1. Enable CORS for all routes
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Handle pre-flight requests
+// 2. Explicitly handle pre-flight OPTIONS requests
+app.options('*', cors(corsOptions));
 
 app.use(express.json({ limit: '50mb' })); 
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -49,6 +41,15 @@ app.use(fileUpload({
   tempFileDir: '/tmp/'
 }));
 
+// --- DATABASE CONNECTION ---
+const connectDB = async () => {
+  if (mongoose.connection.readyState >= 1) return;
+  if (!process.env.MONGO_URI) {
+    throw new Error("MONGO_URI environment variable is not defined");
+  }
+  return mongoose.connect(process.env.MONGO_URI);
+};
+
 // --- DATABASE MIDDLEWARE ---
 app.use(async (req, res, next) => {
   try {
@@ -56,7 +57,6 @@ app.use(async (req, res, next) => {
     next();
   } catch (err) {
     console.error("DB Connection Error:", err);
-    // Return a JSON error so the frontend knows why it failed
     res.status(500).json({ success: false, message: "Database connection failed" });
   }
 });
