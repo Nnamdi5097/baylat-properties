@@ -5,12 +5,12 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import fileUpload from 'express-fileupload';
 
-// Adjust these paths based on where your 'routes' folder is now
-import userRouter from './routes/user.route.js';
-import authRouter from './routes/auth.route.js';
-import listingRouter from './routes/listing.route.js';
-import mailRouter from './routes/mail.route.js'; 
-import videoRouter from './routes/video.route.js'; 
+// CORRECTED: Using '../' to go up to the root folder first
+import userRouter from '../routes/user.route.js';
+import authRouter from '../routes/auth.route.js';
+import listingRouter from '../routes/listing.route.js';
+import mailRouter from '../routes/mail.route.js'; 
+import videoRouter from '../routes/video.route.js'; 
 
 dotenv.config();
 
@@ -44,13 +44,11 @@ app.use(fileUpload({
   tempFileDir: '/tmp/'
 }));
 
-// Simple DB connection helper
 const connectDB = async () => {
   if (mongoose.connection.readyState >= 1) return;
   await mongoose.connect(process.env.MONGO_URI);
 };
 
-// Middleware to ensure DB is connected
 app.use(async (req, res, next) => {
   try {
     await connectDB();
