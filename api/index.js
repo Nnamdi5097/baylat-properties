@@ -5,7 +5,6 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import fileUpload from 'express-fileupload';
 
-// CORRECTED: Using '../' to go up to the root folder first
 import userRouter from '../routes/user.route.js';
 import authRouter from '../routes/auth.route.js';
 import listingRouter from '../routes/listing.route.js';
@@ -58,7 +57,10 @@ app.use(async (req, res, next) => {
   }
 });
 
-// Routes
+// --- ROUTES ---
+// This handles the root path so "Cannot GET /" disappears
+app.get('/', (req, res) => res.status(200).json({ message: 'API is working!' }));
+
 app.get('/api', (req, res) => res.status(200).json({ message: 'Server is running!' }));
 app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter);
