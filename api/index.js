@@ -16,17 +16,15 @@ dotenv.config();
 const app = express();
 
 // --- ALLOWED ORIGINS ---
-// Ensure this list includes the actual URL where your FRONTEND is deployed
 const allowedOrigins = [
   'https://baylatproperties.ng', 
   'https://www.baylatproperties.ng',
-  'https://baylat-properties.vercel.app' // Added this crucial domain
+  'https://baylat-properties.vercel.app'
 ];
 
-// --- CONSOLIDATED CORS SETUP ---
+// --- CORS CONFIGURATION ---
 app.use(cors({
   origin: function (origin, callback) {
-    // allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
@@ -39,14 +37,10 @@ app.use(cors({
   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
 }));
 
+// --- PARSERS ---
 app.use(express.json({ limit: '50mb' })); 
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser()); 
-
-app.use(fileUpload({
-  useTempFiles: true,
-  tempFileDir: '/tmp/'
-}));
 
 // --- DATABASE CONNECTION ---
 const connectDB = async () => {
@@ -69,6 +63,12 @@ app.use(async (req, res, next) => {
     res.status(500).json({ success: false, message: "Database connection failed" });
   }
 });
+
+// --- FILE UPLOAD ---
+app.use(fileUpload({
+  useTempFiles: true,
+  tempFileDir: '/tmp/'
+}));
 
 // --- ROUTES ---
 app.get('/', (req, res) => res.status(200).json({ success: true, message: 'Server is running!' }));

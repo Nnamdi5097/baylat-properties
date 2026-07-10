@@ -8,6 +8,7 @@ const cookieOptions = {
   secure: true,
   sameSite: 'none',
   path: '/',
+  domain: '.baylatproperties.ng', // Helps with cross-subdomain cookie sharing
   maxAge: 30 * 24 * 60 * 60 * 1000,
 };
 
@@ -33,8 +34,8 @@ export const signin = async (req, res, next) => {
     if (!validPassword) return next(errorHandler(401, 'Wrong credentials!'));
 
     const jwtSecret = process.env.JWT_SECRET;
-    // UPDATED: Included isAdmin in the token payload
-    const token = jwt.sign({ id: validUser._id, isAdmin: validUser.isAdmin }, jwtSecret);
+    // Updated: Added || false to ensure isAdmin is never undefined
+    const token = jwt.sign({ id: validUser._id, isAdmin: validUser.isAdmin || false }, jwtSecret);
     const { password: pass, ...rest } = validUser._doc;
 
     res.cookie('access_token', token, cookieOptions)
@@ -51,8 +52,7 @@ export const google = async (req, res, next) => {
     const jwtSecret = process.env.JWT_SECRET;
 
     if (user) {
-      // UPDATED: Included isAdmin in the token payload
-      const token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, jwtSecret);
+      const token = jwt.sign({ id: user._id, isAdmin: user.isAdmin || false }, jwtSecret);
       const { password: pass, ...rest } = user._doc;
 
       res.cookie('access_token', token, cookieOptions)
@@ -69,8 +69,7 @@ export const google = async (req, res, next) => {
       });
       await newUser.save();
 
-      // UPDATED: Included isAdmin in the token payload
-      const token = jwt.sign({ id: newUser._id, isAdmin: newUser.isAdmin }, jwtSecret);
+      const token = jwt.sign({ id: newUser._id, isAdmin: newUser.isAdmin || false }, jwtSecret);
       const { password: pass, ...rest } = newUser._doc;
 
       res.cookie('access_token', token, cookieOptions)
@@ -84,7 +83,8 @@ export const google = async (req, res, next) => {
 
 export const signOut = async (req, res, next) => {
   try {
-    res.clearCookie('access_token', cookieOptions);
+    // Note: When clearing a cookie that had a domain, you must use the same options
+    res.clearCookie('access_token', { ...cookieOptions, maxAge: 0 });
     return res.status(200).json({ success: true, message: 'User has been logged out successfully!' });
   } catch (error) {
     next(error);
