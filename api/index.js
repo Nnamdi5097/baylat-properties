@@ -15,27 +15,28 @@ dotenv.config();
 
 const app = express();
 
-// --- DEBUGGING ---
-console.log("SERVER INITIALIZING...");
-console.log("MONGO_URI present:", !!process.env.MONGO_URI);
+// --- ALLOWED ORIGINS ---
+// Ensure this list includes the actual URL where your FRONTEND is deployed
+const allowedOrigins = [
+  'https://baylatproperties.ng', 
+  'https://www.baylatproperties.ng',
+  'https://baylat-properties.vercel.app' // Added this crucial domain
+];
 
-// --- CRITICAL CORS FIX ---
-app.use((req, res, next) => {
-  const allowedOrigins = ['https://baylatproperties.ng', 'https://www.baylatproperties.ng'];
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.header("Access-Control-Allow-Origin", origin);
-  }
-  res.header("Access-Control-Allow-Credentials", "true");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  next();
-});
-
+// --- CONSOLIDATED CORS SETUP ---
 app.use(cors({
-  origin: ['https://baylatproperties.ng', 'https://www.baylatproperties.ng'],
-  credentials: true
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
 }));
 
 app.use(express.json({ limit: '50mb' })); 
@@ -53,7 +54,6 @@ const connectDB = async () => {
     if (mongoose.connection.readyState >= 1) return;
     if (!process.env.MONGO_URI) throw new Error("MONGO_URI not defined");
     await mongoose.connect(process.env.MONGO_URI);
-    console.log("DATABASE CONNECTED SUCCESSFULLY");
   } catch (err) {
     console.error("DB CONNECTION FAILED:", err.message);
     throw err;
@@ -80,7 +80,6 @@ app.use('/api/video', videoRouter);
 
 // --- ERROR HANDLING ---
 app.use((err, req, res, next) => {
-  console.error("GLOBAL ERROR HANDLER:", err);
   const statusCode = err.statusCode || 500;
   return res.status(statusCode).json({ 
     success: false, 
