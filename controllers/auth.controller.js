@@ -5,10 +5,10 @@ import jwt from 'jsonwebtoken';
 
 const cookieOptions = {
   httpOnly: true,
-  secure: true,
-  sameSite: 'none',
+  secure: true,      // Required for sameSite: 'none'
+  sameSite: 'none',  // Required for cross-site (Vercel to API)
   path: '/',
-  domain: '.baylatproperties.ng', // Helps with cross-subdomain cookie sharing
+  // REMOVED: domain attribute entirely to fix cross-domain cookie rejection
   maxAge: 30 * 24 * 60 * 60 * 1000,
 };
 
@@ -34,7 +34,6 @@ export const signin = async (req, res, next) => {
     if (!validPassword) return next(errorHandler(401, 'Wrong credentials!'));
 
     const jwtSecret = process.env.JWT_SECRET;
-    // Updated: Added || false to ensure isAdmin is never undefined
     const token = jwt.sign({ id: validUser._id, isAdmin: validUser.isAdmin || false }, jwtSecret);
     const { password: pass, ...rest } = validUser._doc;
 
@@ -83,8 +82,8 @@ export const google = async (req, res, next) => {
 
 export const signOut = async (req, res, next) => {
   try {
-    // Note: When clearing a cookie that had a domain, you must use the same options
-    res.clearCookie('access_token', { ...cookieOptions, maxAge: 0 });
+    // When clearing, ensure options match the set cookie (no domain)
+    res.clearCookie('access_token', { ...cookieOptions });
     return res.status(200).json({ success: true, message: 'User has been logged out successfully!' });
   } catch (error) {
     next(error);

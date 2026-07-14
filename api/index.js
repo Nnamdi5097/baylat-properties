@@ -31,7 +31,9 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
+  // This is vital for cross-domain cookie management
+  exposedHeaders: ['Set-Cookie']
 }));
 
 app.use(express.json({ limit: '50mb' })); 
@@ -58,10 +60,9 @@ app.use(async (req, res, next) => {
 });
 
 // --- ROUTES ---
-// This handles the root path so "Cannot GET /" disappears
 app.get('/', (req, res) => res.status(200).json({ message: 'API is working!' }));
-
 app.get('/api', (req, res) => res.status(200).json({ message: 'Server is running!' }));
+
 app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/listing', listingRouter);
