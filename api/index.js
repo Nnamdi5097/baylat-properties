@@ -5,11 +5,12 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import fileUpload from 'express-fileupload';
 
-import userRouter from '../routes/user.route.js';
-import authRouter from '../routes/auth.route.js';
-import listingRouter from '../routes/listing.route.js';
-import mailRouter from '../routes/mail.route.js'; 
-import videoRouter from '../routes/video.route.js'; 
+// These paths are now correct for your new structure:
+import userRouter from './routes/user.route.js';
+import authRouter from './routes/auth.route.js';
+import listingRouter from './routes/listing.route.js';
+import mailRouter from './routes/mail.route.js'; 
+import videoRouter from './routes/video.route.js'; 
 
 dotenv.config();
 
@@ -32,7 +33,6 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
-  // This is vital for cross-domain cookie management
   exposedHeaders: ['Set-Cookie']
 }));
 
