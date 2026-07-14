@@ -5,12 +5,12 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import fileUpload from 'express-fileupload';
 
-// These paths are now correct for your new structure:
-import userRouter from './routes/user.route.js';
-import authRouter from './routes/auth.route.js';
-import listingRouter from './routes/listing.route.js';
-import mailRouter from './routes/mail.route.js'; 
-import videoRouter from './routes/video.route.js'; 
+// Updated paths: '../' moves up from the /api folder to the root
+import userRouter from '../routes/user.route.js';
+import authRouter from '../routes/auth.route.js';
+import listingRouter from '../routes/listing.route.js';
+import mailRouter from '../routes/mail.route.js'; 
+import videoRouter from '../routes/video.route.js'; 
 
 dotenv.config();
 
