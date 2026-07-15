@@ -18,17 +18,39 @@ dotenv.config();
 const app = express();
 const __dirname = path.resolve();
 
-// --- DATABASE CONNECTION ---
+// --- OPTIMIZED DATABASE CONNECTION FOR SERVERLESS ---
+let cached = global.mongoose;
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
 const connectDB = async () => {
-  if (mongoose.connection.readyState >= 1) return;
+  if (cached.conn) return cached.conn;
+
+  if (!cached.promise) {
+    const opts = {
+      bufferCommands: false,
+      maxPoolSize: 1,
+    };
+    cached.promise = mongoose.connect(process.env.MONGO_URI, opts).then((mongoose) => {
+      console.log('Connected to MongoDB');
+      return mongoose;
+    });
+  }
+  cached.conn = await cached.promise;
+  return cached.conn;
+};
+
+// Middleware to ensure DB is connected for every request
+app.use(async (req, res, next) => {
   try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log('Connected to MongoDB');
+    await connectDB();
+    next();
   } catch (err) {
     console.error('Database connection error:', err);
+    next(err);
   }
-};
-connectDB();
+});
 
 // --- CORS CONFIGURATION ---
 const allowedOrigins = [
@@ -51,7 +73,6 @@ app.use(cors({
   exposedHeaders: ['Set-Cookie']
 }));
 
-// Pre-flight handling
 app.options('*', cors());
 
 // Middlewares
@@ -65,11 +86,8 @@ app.use(fileUpload({
 }));
 
 // --- ROUTES ---
-// API Health Check
 app.get('/', (req, res) => res.status(200).json({ message: 'API is working!' }));
-app.get('/api', (req, res) => res.status(200).json({ message: 'Server is running!' }));
 
-// API Endpoints
 app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/listing', listingRouter);
