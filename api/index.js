@@ -4,7 +4,9 @@ import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import fileUpload from 'express-fileupload';
+import path from 'path';
 
+// Import your routes
 import userRouter from '../routes/user.route.js';
 import authRouter from '../routes/auth.route.js';
 import listingRouter from '../routes/listing.route.js';
@@ -14,9 +16,9 @@ import videoRouter from '../routes/video.route.js';
 dotenv.config();
 
 const app = express();
+const __dirname = path.resolve();
 
 // --- DATABASE CONNECTION ---
-// Call this once globally, not inside a request middleware
 const connectDB = async () => {
   if (mongoose.connection.readyState >= 1) return;
   try {
@@ -26,8 +28,9 @@ const connectDB = async () => {
     console.error('Database connection error:', err);
   }
 };
-connectDB(); // Run it once when the function starts
+connectDB();
 
+// --- CORS CONFIGURATION ---
 const allowedOrigins = [
   'https://baylatproperties.ng', 
   'https://www.baylatproperties.ng',
@@ -48,6 +51,10 @@ app.use(cors({
   exposedHeaders: ['Set-Cookie']
 }));
 
+// Pre-flight handling
+app.options('*', cors());
+
+// Middlewares
 app.use(express.json({ limit: '50mb' })); 
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser()); 
@@ -58,18 +65,26 @@ app.use(fileUpload({
 }));
 
 // --- ROUTES ---
+// API Health Check
 app.get('/', (req, res) => res.status(200).json({ message: 'API is working!' }));
 app.get('/api', (req, res) => res.status(200).json({ message: 'Server is running!' }));
 
+// API Endpoints
 app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/listing', listingRouter);
 app.use('/api/mail', mailRouter);    
 app.use('/api/video', videoRouter); 
 
+// Error Handling Middleware
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
-  return res.status(statusCode).json({ success: false, statusCode, message: err.message });
+  const message = err.message || 'Internal Server Error';
+  return res.status(statusCode).json({ 
+    success: false, 
+    statusCode, 
+    message 
+  });
 });
 
 export default app;
