@@ -5,7 +5,6 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import fileUpload from 'express-fileupload';
 
-// Updated paths: '../' moves up from the /api folder to the root
 import userRouter from '../routes/user.route.js';
 import authRouter from '../routes/auth.route.js';
 import listingRouter from '../routes/listing.route.js';
@@ -15,6 +14,19 @@ import videoRouter from '../routes/video.route.js';
 dotenv.config();
 
 const app = express();
+
+// --- DATABASE CONNECTION ---
+// Call this once globally, not inside a request middleware
+const connectDB = async () => {
+  if (mongoose.connection.readyState >= 1) return;
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log('Connected to MongoDB');
+  } catch (err) {
+    console.error('Database connection error:', err);
+  }
+};
+connectDB(); // Run it once when the function starts
 
 const allowedOrigins = [
   'https://baylatproperties.ng', 
@@ -44,20 +56,6 @@ app.use(fileUpload({
   useTempFiles: true,
   tempFileDir: '/tmp/'
 }));
-
-const connectDB = async () => {
-  if (mongoose.connection.readyState >= 1) return;
-  await mongoose.connect(process.env.MONGO_URI);
-};
-
-app.use(async (req, res, next) => {
-  try {
-    await connectDB();
-    next();
-  } catch (err) {
-    res.status(500).json({ success: false, message: "Database connection failed" });
-  }
-});
 
 // --- ROUTES ---
 app.get('/', (req, res) => res.status(200).json({ message: 'API is working!' }));
