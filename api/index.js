@@ -15,25 +15,32 @@ dotenv.config();
 
 const app = express();
 
-// --- CLEAN CORS CONFIGURATION ---
-const corsOptions = {
+// --- 1. STRONGEST CORS IMPLEMENTATION ---
+// This must be the absolute first piece of middleware.
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || 'https://baylatproperties.ng');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
+
+// Secondary layer
+app.use(cors({
   origin: ['https://baylatproperties.ng', 'https://www.baylatproperties.ng', 'https://baylat-properties.vercel.app', 'http://localhost:5173'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-  optionsSuccessStatus: 200 // Ensures preflight returns 200 instead of 204
-};
+  credentials: true
+}));
 
-app.use(cors(corsOptions));
-// Explicitly handle preflight for all routes
-app.options('*', cors(corsOptions));
-
-// --- MIDDLEWARES ---
+// --- 2. MIDDLEWARES ---
 app.use(express.json({ limit: '50mb' })); 
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser()); 
 
-// --- DATABASE CONNECTION ---
+// --- 3. DATABASE CONNECTION ---
 let cached = global.mongoose;
 if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
@@ -52,6 +59,7 @@ const connectDB = async () => {
   return cached.conn;
 };
 
+// Database middleware
 app.use(async (req, res, next) => {
   try {
     await connectDB();
@@ -67,7 +75,7 @@ app.use(fileUpload({
   tempFileDir: '/tmp/'
 }));
 
-// --- ROUTES ---
+// --- 4. ROUTES ---
 app.get('/', (req, res) => res.status(200).json({ message: 'API is working!' }));
 
 app.use('/api/user', userRouter);
