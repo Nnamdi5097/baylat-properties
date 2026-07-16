@@ -1,4 +1,4 @@
- import express from 'express';
+import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
@@ -56,7 +56,8 @@ app.use(async (req, res, next) => {
 const allowedOrigins = [
   'https://baylatproperties.ng', 
   'https://www.baylatproperties.ng',
-  'https://baylat-properties.vercel.app'
+  'https://baylat-properties.vercel.app',
+  'http://localhost:5173'
 ];
 
 app.use(cors({
@@ -105,4 +106,4 @@ app.use((err, req, res, next) => {
   });
 });
 
-export default app;
+export default app; 
