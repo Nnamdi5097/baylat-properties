@@ -15,24 +15,18 @@ dotenv.config();
 
 const app = express();
 
-// --- 1. STRONGEST CORS IMPLEMENTATION ---
-// This must be the absolute first piece of middleware.
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || 'https://baylatproperties.ng');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  next();
-});
-
-// Secondary layer
+// --- 1. CORS CONFIGURATION ---
+// We use the 'cors' package to handle both preflight and standard requests reliably.
 app.use(cors({
-  origin: ['https://baylatproperties.ng', 'https://www.baylatproperties.ng', 'https://baylat-properties.vercel.app', 'http://localhost:5173'],
-  credentials: true
+  origin: [
+    'https://baylatproperties.ng', 
+    'https://www.baylatproperties.ng', 
+    'https://baylat-properties.vercel.app', 
+    'http://localhost:5173'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // --- 2. MIDDLEWARES ---
@@ -91,4 +85,5 @@ app.use((err, req, res, next) => {
   return res.status(statusCode).json({ success: false, statusCode, message });
 });
 
+// Vercel needs this export to handle requests
 export default app;
