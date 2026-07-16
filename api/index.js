@@ -1,4 +1,4 @@
- import express from 'express';
+import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
@@ -15,19 +15,21 @@ dotenv.config();
 
 const app = express();
 
-// --- 1. CORS CONFIGURATION ---
-// We use the 'cors' package to handle both preflight and standard requests reliably.
-app.use(cors({
+// --- 1. CORS CONFIGURATION (MUST BE FIRST) ---
+const corsOptions = {
   origin: [
     'https://baylatproperties.ng', 
     'https://www.baylatproperties.ng', 
-    'https://baylat-properties.vercel.app', 
-    'http://localhost:5173'
+    'https://baylat-properties.vercel.app'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
-}));
+};
+
+app.use(cors(corsOptions));
+// Explicitly handle preflight requests
+app.options('*', cors(corsOptions)); 
 
 // --- 2. MIDDLEWARES ---
 app.use(express.json({ limit: '50mb' })); 
@@ -85,5 +87,4 @@ app.use((err, req, res, next) => {
   return res.status(statusCode).json({ success: false, statusCode, message });
 });
 
-// Vercel needs this export to handle requests
-export default app;
+export default app; 
