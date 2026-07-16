@@ -16,7 +16,8 @@ dotenv.config();
 
 const app = express();
 
-// --- 1. CORS CONFIGURATION (MUST BE FIRST) ---
+// --- 1. STRICT CORS CONFIGURATION ---
+// This must be placed before any other middleware or routes
 const allowedOrigins = [
   'https://baylatproperties.ng', 
   'https://www.baylatproperties.ng',
@@ -38,10 +39,13 @@ app.use(cors({
   exposedHeaders: ['Set-Cookie']
 }));
 
-// Explicitly handle preflight requests
+// Explicitly handle all preflight requests
+// This prevents redirects from interfering with the browser's security check
 app.options('*', cors({
   origin: allowedOrigins,
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
 }));
 
 // --- 2. MIDDLEWARES ---
@@ -68,7 +72,6 @@ const connectDB = async () => {
   return cached.conn;
 };
 
-// Database middleware
 app.use(async (req, res, next) => {
   try {
     await connectDB();
