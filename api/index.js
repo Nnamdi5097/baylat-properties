@@ -1,4 +1,4 @@
-import express from 'express';
+ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
@@ -6,7 +6,6 @@ import cors from 'cors';
 import fileUpload from 'express-fileupload';
 import path from 'path';
 
-// Import your routes
 import userRouter from '../routes/user.route.js';
 import authRouter from '../routes/auth.route.js';
 import listingRouter from '../routes/listing.route.js';
@@ -16,43 +15,8 @@ import videoRouter from '../routes/video.route.js';
 dotenv.config();
 
 const app = express();
-const __dirname = path.resolve();
 
-// --- OPTIMIZED DATABASE CONNECTION FOR SERVERLESS ---
-let cached = global.mongoose;
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
-}
-
-const connectDB = async () => {
-  if (cached.conn) return cached.conn;
-
-  if (!cached.promise) {
-    const opts = {
-      bufferCommands: false,
-      maxPoolSize: 1,
-    };
-    cached.promise = mongoose.connect(process.env.MONGO_URI, opts).then((mongoose) => {
-      console.log('Connected to MongoDB');
-      return mongoose;
-    });
-  }
-  cached.conn = await cached.promise;
-  return cached.conn;
-};
-
-// Middleware to ensure DB is connected for every request
-app.use(async (req, res, next) => {
-  try {
-    await connectDB();
-    next();
-  } catch (err) {
-    console.error('Database connection error:', err);
-    next(err);
-  }
-});
-
-// --- CORS CONFIGURATION ---
+// --- 1. CORS CONFIGURATION (MUST BE FIRST) ---
 const allowedOrigins = [
   'https://baylatproperties.ng', 
   'https://www.baylatproperties.ng',
@@ -74,19 +38,53 @@ app.use(cors({
   exposedHeaders: ['Set-Cookie']
 }));
 
-app.options('*', cors());
+// Explicitly handle preflight requests
+app.options('*', cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 
-// Middlewares
+// --- 2. MIDDLEWARES ---
 app.use(express.json({ limit: '50mb' })); 
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser()); 
+
+// --- 3. DATABASE CONNECTION ---
+let cached = global.mongoose;
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
+const connectDB = async () => {
+  if (cached.conn) return cached.conn;
+  if (!cached.promise) {
+    const opts = { bufferCommands: false, maxPoolSize: 1 };
+    cached.promise = mongoose.connect(process.env.MONGO_URI, opts).then((mongoose) => {
+      console.log('Connected to MongoDB');
+      return mongoose;
+    });
+  }
+  cached.conn = await cached.promise;
+  return cached.conn;
+};
+
+// Database middleware
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('Database connection error:', err);
+    next(err);
+  }
+});
 
 app.use(fileUpload({
   useTempFiles: true,
   tempFileDir: '/tmp/'
 }));
 
-// --- ROUTES ---
+// --- 4. ROUTES ---
 app.get('/', (req, res) => res.status(200).json({ message: 'API is working!' }));
 
 app.use('/api/user', userRouter);
@@ -106,4 +104,4 @@ app.use((err, req, res, next) => {
   });
 });
 
-export default app; 
+export default app;
