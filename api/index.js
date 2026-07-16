@@ -16,44 +16,33 @@ dotenv.config();
 
 const app = express();
 
-// --- 1. STRICT CORS CONFIGURATION ---
-// This must be placed before any other middleware or routes
-const allowedOrigins = [
-  'https://baylatproperties.ng', 
-  'https://www.baylatproperties.ng',
-  'https://baylat-properties.vercel.app',
-  'http://localhost:5173'
-];
+// --- THE "STRENGTHENED" CORS MIDDLEWARE ---
+// 1. Set headers manually for every single request
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
+  // 2. Stop preflight requests here immediately so no redirects happen
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
 
+// 3. Keep the cors package as a backup
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
-  exposedHeaders: ['Set-Cookie']
+  origin: ['https://baylatproperties.ng', 'https://www.baylatproperties.ng', 'https://baylat-properties.vercel.app', 'http://localhost:5173'],
+  credentials: true
 }));
 
-// Explicitly handle all preflight requests
-// This prevents redirects from interfering with the browser's security check
-app.options('*', cors({
-  origin: allowedOrigins,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
-}));
-
-// --- 2. MIDDLEWARES ---
+// --- MIDDLEWARES ---
 app.use(express.json({ limit: '50mb' })); 
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser()); 
 
-// --- 3. DATABASE CONNECTION ---
+// --- DATABASE CONNECTION ---
 let cached = global.mongoose;
 if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
@@ -87,7 +76,7 @@ app.use(fileUpload({
   tempFileDir: '/tmp/'
 }));
 
-// --- 4. ROUTES ---
+// --- ROUTES ---
 app.get('/', (req, res) => res.status(200).json({ message: 'API is working!' }));
 
 app.use('/api/user', userRouter);
@@ -96,15 +85,11 @@ app.use('/api/listing', listingRouter);
 app.use('/api/mail', mailRouter);    
 app.use('/api/video', videoRouter); 
 
-// Error Handling Middleware
+// Error Handling
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
-  return res.status(statusCode).json({ 
-    success: false, 
-    statusCode, 
-    message 
-  });
+  return res.status(statusCode).json({ success: false, statusCode, message });
 });
 
 export default app;
