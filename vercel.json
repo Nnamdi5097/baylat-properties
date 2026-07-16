@@ -4,5 +4,7 @@
       "source": "/(.*)",
       "destination": "/api/index.js"
     }
-  ]
+  ],
+  "cleanUrls": false,
+  "trailingSlash": false
 }

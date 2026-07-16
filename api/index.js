@@ -4,7 +4,6 @@ import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import fileUpload from 'express-fileupload';
-import path from 'path';
 
 import userRouter from '../routes/user.route.js';
 import authRouter from '../routes/auth.route.js';
@@ -16,26 +15,18 @@ dotenv.config();
 
 const app = express();
 
-// --- THE "STRENGTHENED" CORS MIDDLEWARE ---
-// 1. Set headers manually for every single request
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  
-  // 2. Stop preflight requests here immediately so no redirects happen
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  next();
-});
-
-// 3. Keep the cors package as a backup
-app.use(cors({
+// --- CLEAN CORS CONFIGURATION ---
+const corsOptions = {
   origin: ['https://baylatproperties.ng', 'https://www.baylatproperties.ng', 'https://baylat-properties.vercel.app', 'http://localhost:5173'],
-  credentials: true
-}));
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 200 // Ensures preflight returns 200 instead of 204
+};
+
+app.use(cors(corsOptions));
+// Explicitly handle preflight for all routes
+app.options('*', cors(corsOptions));
 
 // --- MIDDLEWARES ---
 app.use(express.json({ limit: '50mb' })); 
