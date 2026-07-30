@@ -1,4 +1,4 @@
- {
+{
   "name": "baylat-backend",
   "version": "1.0.0",
   "description": "",
@@ -21,8 +21,8 @@
     "express-fileupload": "^1.5.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^7.5.0",
+    "multer": "^2.2.0",
     "nodemailer": "^8.0.10",
     "nodemon": "^3.0.1"
   }
 }
-  
