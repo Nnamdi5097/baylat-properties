@@ -12,36 +12,48 @@ const cookieOptions = {
 };
 
 export const signup = async (req, res, next) => {
-  console.log("DEBUG: Signup started");
-  const { username, email, password } = req.body;
-  const hashedPassword = bcryptjs.hashSync(password, 10);
-  const newUser = new User({ username, email, password: hashedPassword });
+  console.log("DEBUG: Signup started with body:", { email: req.body?.email, username: req.body?.username });
   try {
+    const { username, email, password } = req.body;
+    if (!username || !email || !password) {
+      return next(errorHandler(400, 'All fields are required!'));
+    }
+    const hashedPassword = bcryptjs.hashSync(password, 10);
+    const newUser = new User({ username, email, password: hashedPassword });
     await newUser.save();
     console.log("DEBUG: User created successfully");
     res.status(201).json({ success: true, message: 'User created successfully!' });
   } catch (error) {
-    console.error("DEBUG: Signup error", error);
+    console.error("DEBUG: Signup error exception:", error);
     next(error);
   }
 };
 
 export const signin = async (req, res, next) => {
   console.log("DEBUG: Signin function started");
-  const { email, password } = req.body;
   try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return next(errorHandler(400, 'Email and password are required!'));
+    }
+
     console.log("DEBUG: Attempting to find user:", email);
     const validUser = await User.findOne({ email });
     if (!validUser) {
-      console.log("DEBUG: User not found");
+      console.log("DEBUG: User not found in database");
       return next(errorHandler(404, 'User not found!'));
     }
 
     console.log("DEBUG: User found, verifying password");
     const validPassword = bcryptjs.compareSync(password, validUser.password);
     if (!validPassword) {
-      console.log("DEBUG: Wrong credentials");
+      console.log("DEBUG: Wrong credentials provided");
       return next(errorHandler(401, 'Wrong credentials!'));
+    }
+
+    if (!process.env.JWT_SECRET) {
+      console.error("DEBUG CRITICAL: JWT_SECRET environment variable is missing!");
+      return next(errorHandler(500, 'Server configuration error: JWT secret missing'));
     }
 
     console.log("DEBUG: Password valid, generating token");
@@ -57,7 +69,7 @@ export const signin = async (req, res, next) => {
       .status(200)
       .json(rest);
   } catch (error) {
-    console.error("DEBUG: Signin error:", error);
+    console.error("DEBUG: Signin exception error:", error);
     next(error);
   }
 };
@@ -67,6 +79,11 @@ export const google = async (req, res, next) => {
   try {
     const user = await User.findOne({ email: req.body.email });
     
+    if (!process.env.JWT_SECRET) {
+      console.log("DEBUG CRITICAL: JWT_SECRET environment variable is missing!");
+      return next(errorHandler(500, 'Server configuration error: JWT secret missing'));
+    }
+
     if (user) {
       console.log("DEBUG: Existing Google user found");
       const token = jwt.sign(
@@ -103,18 +120,18 @@ export const google = async (req, res, next) => {
         .json(rest);
     }
   } catch (error) {
-    console.error("DEBUG: Google auth error:", error);
+    console.error("DEBUG: Google auth error exception:", error);
     next(error);
   }
 };
 
 export const signOut = async (req, res, next) => {
   try {
-    console.log("DEBUG: Signing out");
+    console.log("DEBUG: Signing out user");
     res.clearCookie('access_token', { ...cookieOptions });
     return res.status(200).json({ success: true, message: 'User has been logged out successfully!' });
   } catch (error) {
-    console.error("DEBUG: Signout error:", error);
+    console.error("DEBUG: Signout error exception:", error);
     next(error);
   }
-};
+};     
