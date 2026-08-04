@@ -2,25 +2,30 @@
 import Video from '../models/video.js'; 
 import { verifyToken } from '../utils/verifyUser.js'; 
 import cloudinary from '../utils/cloudinary.js';
+import multer from 'multer';
 
 const router = express.Router();
 
+// Configure multer to store files in memory for Vercel serverless compatibility
+const upload = multer({ storage: multer.memoryStorage() });
+
 // ==========================================
-// 1. GET ALL VIDEOS (Fixed 404 Issue)
+// 1. GET ALL VIDEOS
 // ==========================================
 router.get('/all', async (req, res) => {
   try {
     const videos = await Video.find().sort({ createdAt: -1 });
     res.status(200).json({ success: true, videos });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch videos.' });
+    console.error("DEBUG: Fetch videos error:", error);
+    res.status(500).json({ success: false, message: 'Failed to fetch videos.', error: error.message });
   }
 });
 
 // ==========================================
 // 2. UPLOAD A NEW VIDEO
 // ==========================================
-router.post('/upload', verifyToken, async (req, res) => {
+router.post('/upload', verifyToken, upload.single('video'), async (req, res) => {
   try {
     const totalVideos = await Video.countDocuments();
     if (totalVideos >= 6) {
@@ -30,10 +35,14 @@ router.post('/upload', verifyToken, async (req, res) => {
       });
     }
 
-    const file = req.files?.video; 
-    if (!file) return res.status(400).json({ success: false, message: 'No video file provided.' });
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No video file provided.' });
+    }
 
-    const result = await cloudinary.uploader.upload(file.tempFilePath, {
+    // Convert memory buffer to a data URI string for Cloudinary upload
+    const fileBase64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+
+    const result = await cloudinary.uploader.upload(fileBase64, {
       resource_type: "video", 
       folder: "baylat_properties"
     });
@@ -52,6 +61,7 @@ router.post('/upload', verifyToken, async (req, res) => {
       video: newVideo 
     });
   } catch (error) {
+    console.error("DEBUG: Upload error:", error);
     return res.status(500).json({ success: false, message: 'Upload failed.', error: error.message });
   }
 });
@@ -72,7 +82,8 @@ router.delete('/delete/:id', verifyToken, async (req, res) => {
 
     res.status(200).json({ success: true, message: 'Video deleted successfully.' });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Delete failed.' });
+    console.error("DEBUG: Delete error:", error);
+    res.status(500).json({ success: false, message: 'Delete failed.', error: error.message });
   }
 });
 
