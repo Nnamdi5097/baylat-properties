@@ -22,7 +22,7 @@ const VideoSchema = new mongoose.Schema(
     },
     userRef: {
       type: String,
-      required: false, // Future-proofs your DB to track which admin uploaded the file
+      required: false, // Tracks which admin uploaded the file
     }
   },
   {
@@ -30,6 +30,9 @@ const VideoSchema = new mongoose.Schema(
     timestamps: true, 
   }
 );
+
+// Performance optimization: Index createdAt for fast sorting on the home/property views
+VideoSchema.index({ createdAt: -1 });
 
 // Ensures Mongoose doesn't compile the model multiple times during server reloads
 const Video = mongoose.models.Video || mongoose.model('Video', VideoSchema);

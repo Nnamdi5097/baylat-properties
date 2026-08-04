@@ -28,7 +28,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-// Explicitly handle preflight requests
 app.options('*', cors(corsOptions)); 
 
 // --- 2. MIDDLEWARES ---
@@ -39,7 +38,7 @@ app.use(cookieParser());
 // --- Multer Memory Storage Configuration for Vercel ---
 const upload = multer({ storage: multer.memoryStorage() });
 
-// --- 3. DATABASE CONNECTION ---
+// --- 3. ROBUST DATABASE CONNECTION CACHING FOR VERCEL ---
 let cached = global.mongoose;
 if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
@@ -48,24 +47,29 @@ if (!cached) {
 const connectDB = async () => {
   if (cached.conn) return cached.conn;
   if (!cached.promise) {
-    const opts = { bufferCommands: false, maxPoolSize: 1 };
-    cached.promise = mongoose.connect(process.env.MONGO_URI, opts).then((mongoose) => {
+    const opts = { bufferCommands: false, serverSelectionTimeoutMS: 10000 };
+    cached.promise = mongoose.connect(process.env.MONGO_URI, opts).then((mongooseInstance) => {
       console.log('Connected to MongoDB');
-      return mongoose;
+      return mongooseInstance;
     });
   }
-  cached.conn = await cached.promise;
+  try {
+    cached.conn = await cached.promise;
+  } catch (e) {
+    cached.promise = null;
+    throw e;
+  }
   return cached.conn;
 };
 
-// Database middleware
+// Ensure database connects cleanly on incoming API execution without blocking body streams
 app.use(async (req, res, next) => {
   try {
     await connectDB();
     next();
   } catch (err) {
-    console.error('Database connection error:', err);
-    next(err);
+    console.error('Database connection middleware error:', err);
+    return res.status(500).json({ success: false, message: 'Database connection failed' });
   }
 });
 
@@ -78,10 +82,11 @@ app.use('/api/listing', listingRouter);
 app.use('/api/mail', mailRouter);    
 app.use('/api/video', videoRouter); 
 
-// Error Handling
+// Global Error Handling Middleware
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
+  console.error(`ERROR intercepted [${statusCode}]:`, message, err);
   return res.status(statusCode).json({ success: false, statusCode, message });
 });
 
