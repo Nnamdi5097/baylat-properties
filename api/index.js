@@ -35,6 +35,14 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser()); 
 
+// Fix double /api/api/ prefix issue coming from frontend requests
+app.use((req, res, next) => {
+  if (req.url.startsWith('/api/api/')) {
+    req.url = req.url.replace('/api/api/', '/api/');
+  }
+  next();
+});
+
 // --- Multer Memory Storage Configuration for Vercel ---
 const upload = multer({ storage: multer.memoryStorage() });
 
