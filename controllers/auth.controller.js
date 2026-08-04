@@ -22,7 +22,7 @@ export const signup = async (req, res, next) => {
     const newUser = new User({ username, email, password: hashedPassword });
     await newUser.save();
     console.log("DEBUG: User created successfully");
-    res.status(201).json({ success: true, message: 'User created successfully!' });
+    return res.status(201).json({ success: true, message: 'User created successfully!' });
   } catch (error) {
     console.error("DEBUG: Signup error exception:", error);
     next(error);
@@ -65,7 +65,7 @@ export const signin = async (req, res, next) => {
     const { password: pass, ...rest } = validUser._doc;
 
     console.log("DEBUG: Login successful, sending response");
-    res.cookie('access_token', token, cookieOptions)
+    return res.cookie('access_token', token, cookieOptions)
       .status(200)
       .json(rest);
   } catch (error) {
@@ -77,13 +77,13 @@ export const signin = async (req, res, next) => {
 export const google = async (req, res, next) => {
   console.log("DEBUG: Google auth started");
   try {
-    const user = await User.findOne({ email: req.body.email });
-    
     if (!process.env.JWT_SECRET) {
       console.log("DEBUG CRITICAL: JWT_SECRET environment variable is missing!");
       return next(errorHandler(500, 'Server configuration error: JWT secret missing'));
     }
 
+    const user = await User.findOne({ email: req.body.email });
+    
     if (user) {
       console.log("DEBUG: Existing Google user found");
       const token = jwt.sign(
@@ -93,15 +93,19 @@ export const google = async (req, res, next) => {
       );
       const { password: pass, ...rest } = user._doc;
 
-      res.cookie('access_token', token, cookieOptions)
+      return res.cookie('access_token', token, cookieOptions)
         .status(200)
         .json(rest);
     } else {
       console.log("DEBUG: Creating new Google user");
       const generatedPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
       const hashedPassword = bcryptjs.hashSync(generatedPassword, 10);
+      
+      // 👉 Safe fallback name check added here
+      const baseName = req.body.name ? req.body.name.split(' ').join('').toLowerCase() : 'user';
+      
       const newUser = new User({
-        username: req.body.name.split(' ').join('').toLowerCase() + Math.random().toString(36).slice(-4),
+        username: baseName + Math.random().toString(36).slice(-4),
         email: req.body.email,
         password: hashedPassword,
         avatar: req.body.photo,
@@ -115,7 +119,7 @@ export const google = async (req, res, next) => {
       );
       const { password: pass, ...rest } = newUser._doc;
 
-      res.cookie('access_token', token, cookieOptions)
+      return res.cookie('access_token', token, cookieOptions)
         .status(200)
         .json(rest);
     }
@@ -134,4 +138,4 @@ export const signOut = async (req, res, next) => {
     console.error("DEBUG: Signout error exception:", error);
     next(error);
   }
-};     
+};
