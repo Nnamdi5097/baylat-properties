@@ -1,4 +1,4 @@
- import express from "express";
+import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
@@ -15,19 +15,39 @@ dotenv.config();
 
 const app = express();
 
-const corsOptions = {
-  origin: [
-    "https://baylatproperties.ng", 
-    "https://www.baylatproperties.ng", 
-    "https://baylat-properties.vercel.app"
-  ],
+const allowedOrigins = [
+  "https://baylatproperties.ng",
+  "https://www.baylatproperties.ng",
+  "https://baylat-properties.vercel.app"
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, postman, or curl)
+    if (!origin) return callback(null, true);
+    
+    // Check if the incoming origin matches or ends with our allowed domain (handles subdomains)
+    const isAllowed = allowedOrigins.some(allowed => origin === allowed || origin.endsWith('.baylatproperties.ng') || origin.endsWith('.vercel.app'));
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-};
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"]
+}));
 
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); 
+// Explicitly handle preflight requests to ensure CORS passes
+app.options("*", (req, res) => {
+  res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept");
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.sendStatus(204);
+});
 
 app.use(express.json({ limit: "50mb" })); 
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
@@ -97,4 +117,4 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
-export default app;
+export default app; 
