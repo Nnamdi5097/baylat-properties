@@ -5,7 +5,7 @@ import { verifyToken, verifyAdmin } from '../utils/verifyUser.js';
 const router = express.Router();
 
 router.get('/test', test);
-router.post('/update/:id', verifyToken, updateUser);
+router.post('/update/:id',  verifyToken, updateUser);
 
 // Protect delete and user management routes to ensure only admins or authorized users can perform them
 // If you want ONLY admins to delete users, chain verifyAdmin:

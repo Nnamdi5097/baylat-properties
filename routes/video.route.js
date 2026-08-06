@@ -18,7 +18,7 @@ router.get('/all', async (req, res) => {
     res.status(200).json({ success: true, videos });
   } catch (error) {
     console.error("DEBUG: Fetch videos error:", error);
-    res.status(500).json({ success: false, message: 'Failed to fetch videos.', error: error.message });
+    res.status(500).json({ success: false, message: 'Failed to fetch videos.',  error: error.message });
   }
 });
 
