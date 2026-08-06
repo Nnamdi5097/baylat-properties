@@ -44,6 +44,6 @@ export const verifyAdmin = (req, res, next) => {
     next();
   } else {
     // User is logged in but lacks admin rights
-    return next(errorHandler(403, 'Forbidden: Admin access required'));
+    return next(errorHandler(403,  'Forbidden: Admin access required'));
   }
 };

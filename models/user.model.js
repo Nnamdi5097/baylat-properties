@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
   },
-  { timestamps: true }
+  { timestamps: true  }
 );
 
 // Prevents overwrite errors in serverless/hot-reload environments
