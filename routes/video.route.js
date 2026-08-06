@@ -1,6 +1,6 @@
  import express from 'express';
 import Video from '../models/video.js'; 
-import { verifyToken } from '../utils/verifyUser.js'; 
+import { verifyToken, verifyAdmin } from '../utils/verifyUser.js'; 
 import cloudinary from '../utils/cloudinary.js';
 import multer from 'multer';
 
@@ -10,7 +10,7 @@ const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 // ==========================================
-// 1. GET ALL VIDEOS
+// 1. GET ALL VIDEOS (Public access)
 // ==========================================
 router.get('/all', async (req, res) => {
   try {
@@ -23,9 +23,9 @@ router.get('/all', async (req, res) => {
 });
 
 // ==========================================
-// 2. UPLOAD A NEW VIDEO
+// 2. UPLOAD A NEW VIDEO (Admin only)
 // ==========================================
-router.post('/upload', verifyToken, upload.single('video'), async (req, res) => {
+router.post('/upload', verifyToken, verifyAdmin, upload.single('video'), async (req, res) => {
   try {
     const totalVideos = await Video.countDocuments();
     if (totalVideos >= 6) {
@@ -67,9 +67,9 @@ router.post('/upload', verifyToken, upload.single('video'), async (req, res) => 
 });
 
 // ==========================================
-// 3. DELETE A VIDEO
+// 3. DELETE A VIDEO (Admin only)
 // ==========================================
-router.delete('/delete/:id', verifyToken, async (req, res) => {
+router.delete('/delete/:id', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const video = await Video.findById(req.params.id);
     if (!video) return res.status(404).json({ success: false, message: 'Video not found.' });

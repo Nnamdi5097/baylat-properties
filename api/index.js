@@ -1,4 +1,4 @@
- import express from "express";
+import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
@@ -38,10 +38,12 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"]
 }));
 
-// Explicitly handle preflight requests safely with specific origin matching
+// Explicitly handle preflight requests safely with dynamic origin matching
 app.options("*", (req, res) => {
   const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin) || (origin && origin.endsWith('.baylatproperties.ng'))) {
+  const isAllowed = !origin || allowedOrigins.some(allowed => origin === allowed || origin.endsWith('.baylatproperties.ng') || origin.endsWith('.vercel.app'));
+  
+  if (isAllowed && origin) {
     res.header("Access-Control-Allow-Origin", origin);
   }
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
@@ -118,4 +120,4 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
-export default app;
+export default app; 

@@ -12,7 +12,6 @@ export const verifyToken = (req, res, next) => {
     }
 
     // 3. Verify the token signature
-    // Ensure JWT_SECRET is pulled directly from process.env
     if (!process.env.JWT_SECRET) {
       console.error("CRITICAL: JWT_SECRET is missing in environment variables!");
       return next(errorHandler(500, 'Server configuration error.'));
@@ -30,5 +29,21 @@ export const verifyToken = (req, res, next) => {
   } catch (error) {
     console.error("Error inside verifyToken middleware:", error.message);
     return next(errorHandler(500, 'Internal server error during token validation.'));
+  }
+};
+
+// --- NEW: Admin Authorization Middleware ---
+export const verifyAdmin = (req, res, next) => {
+  // Ensure verifyToken ran first so req.user exists
+  if (!req.user) {
+    return next(errorHandler(401, 'Unauthorized: Please log in first'));
+  }
+
+  if (req.user.isAdmin) {
+    // User is an admin, proceed to the route controller
+    next();
+  } else {
+    // User is logged in but lacks admin rights
+    return next(errorHandler(403, 'Forbidden: Admin access required'));
   }
 };
