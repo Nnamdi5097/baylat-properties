@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+ import mongoose from 'mongoose';
 
 const listingSchema = new mongoose.Schema(
   {
@@ -24,11 +24,13 @@ const listingSchema = new mongoose.Schema(
     },
     bathrooms: {
       type: Number,
-      required: true,
+      required: false, // Made optional to support land/plots
+      default: 0,
     },
     bedrooms: {
       type: Number,
-      required: true,
+      required: false, // Made optional to support land/plots
+      default: 0,
     },
     furnished: {
       type: Boolean,
@@ -41,6 +43,7 @@ const listingSchema = new mongoose.Schema(
     type: {
       type: String,
       required: true,
+      enum: ['sale', 'rent', 'plot', 'acre'], // Explicitly allows your land types
     },
     offer: {
       type: Boolean,
@@ -57,7 +60,7 @@ const listingSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
+ 
 const Listing = mongoose.model('Listing', listingSchema);
 
 export default Listing;

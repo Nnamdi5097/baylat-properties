@@ -1,4 +1,4 @@
-import Listing from '../models/listing.model.js';
+ import Listing from '../models/listing.model.js';
 import { errorHandler } from '../utils/error.js';
 
 export const createListing = async (req, res, next) => {
@@ -11,14 +11,14 @@ export const createListing = async (req, res, next) => {
 };
 
 export const deleteListing = async (req, res, next) => {
-  const listing = await Listing.findById(req.params.id);
-  if (!listing) return next(errorHandler(404, 'Listing not found!'));
-
-  if (req.user.id !== listing.userRef && !req.user.isAdmin) {
-    return next(errorHandler(401, 'You can only delete your own listings!'));
-  }
-
   try {
+    const listing = await Listing.findById(req.params.id);
+    if (!listing) return next(errorHandler(404, 'Listing not found!'));
+
+    if (req.user.id !== listing.userRef && !req.user.isAdmin) {
+      return next(errorHandler(401, 'You can only delete your own listings!'));
+    }
+
     await Listing.findByIdAndDelete(req.params.id);
     res.status(200).json({ success: true, message: 'Listing has been deleted!' });
   } catch (error) {
@@ -27,14 +27,14 @@ export const deleteListing = async (req, res, next) => {
 };
 
 export const updateListing = async (req, res, next) => {
-  const listing = await Listing.findById(req.params.id);
-  if (!listing) return next(errorHandler(404, 'Listing not found!'));
-
-  if (req.user.id !== listing.userRef && !req.user.isAdmin) {
-    return next(errorHandler(401, 'You can only update your own listings!'));
-  }
-
   try {
+    const listing = await Listing.findById(req.params.id);
+    if (!listing) return next(errorHandler(404, 'Listing not found!'));
+
+    if (req.user.id !== listing.userRef && !req.user.isAdmin) {
+      return next(errorHandler(401, 'You can only update your own listings!'));
+    }
+
     const updatedListing = await Listing.findByIdAndUpdate(
       req.params.id,
       req.body,
@@ -64,21 +64,27 @@ export const getListings = async (req, res, next) => {
     let offer = req.query.offer;
     if (offer === undefined || offer === 'false') {
       offer = { $in: [false, true] };
+    } else if (offer === 'true') {
+      offer = true;
     }
 
     let furnished = req.query.furnished;
     if (furnished === undefined || furnished === 'false') {
       furnished = { $in: [false, true] };
+    } else if (furnished === 'true') {
+      furnished = true;
     }
 
     let parking = req.query.parking;
     if (parking === undefined || parking === 'false') {
       parking = { $in: [false, true] };
+    } else if (parking === 'true') {
+      parking = true;
     }
 
     let type = req.query.type;
     if (type === undefined || type === 'all') {
-      type = { $in: ['sale', 'rent'] };
+      type = { $in: ['sale', 'rent', 'plot', 'acre'] };
     }
 
     const searchTerm = req.query.searchTerm || '';
