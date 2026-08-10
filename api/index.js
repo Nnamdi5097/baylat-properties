@@ -98,40 +98,6 @@ app.use(async (req, res, next) => {
   }
 });
 
-// TEMPORARY ADMIN CREATOR ROUTE (Fixed Path)
-app.get('/api/make-admin', async (req, res) => {
-  try {
-    const User = await import('../models/user.model.js');
-    const bcrypt = await import('bcryptjs');
-    
-    const email = 'BaylatProperties78@gmail.com';
-    const username = 'BaylatProperties';
-    const plainPassword = 'BaylatPassword123'; 
-
-    const hashedPassword = bcrypt.default.hashSync(plainPassword, 10);
-
-    let user = await User.default.findOne({ email });
-    if (user) {
-      user.password = hashedPassword;
-      user.role = 'admin';
-      user.username = username;
-      await user.save();
-      return res.send('SUCCESS: Existing user updated to ADMIN!');
-    } else {
-      user = new User.default({
-        username: username,
-        email: email,
-        password: hashedPassword,
-        role: 'admin'
-      });
-      await user.save();
-      return res.send('SUCCESS: New ADMIN user created!');
-    }
-  } catch (err) {
-    res.status(500).send('Error: ' + err.message);
-  }
-});
-
 app.get("/", (req, res) => res.status(200).json({ message: "Baylat Properties API is working successfully!" }));
 
 app.use("/api/user", userRouter);
