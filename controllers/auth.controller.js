@@ -3,10 +3,12 @@ import bcryptjs from 'bcryptjs';
 import { errorHandler } from '../utils/error.js';
 import jwt from 'jsonwebtoken';
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 const cookieOptions = {
   httpOnly: true,
-  secure: true,      // Required for sameSite: 'none'
-  sameSite: 'none',  // Required for cross-site (Vercel to API)
+  secure: isProduction,                      // True on Vercel (HTTPS), false locally (HTTP)
+  sameSite: isProduction ? 'none' : 'lax',    // 'none' for Vercel cross-site, 'lax' for local dev
   path: '/',
   maxAge: 30 * 24 * 60 * 60 * 1000,
 };
@@ -101,7 +103,6 @@ export const google = async (req, res, next) => {
       const generatedPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
       const hashedPassword = bcryptjs.hashSync(generatedPassword, 10);
       
-      // 👉 Safe fallback name check added here
       const baseName = req.body.name ? req.body.name.split(' ').join('').toLowerCase() : 'user';
       
       const newUser = new User({
