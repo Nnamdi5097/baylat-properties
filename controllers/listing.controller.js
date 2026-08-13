@@ -3,7 +3,11 @@ import { errorHandler } from '../utils/error.js';
 
 export const createListing = async (req, res, next) => {
   try {
-    const listing = await Listing.create(req.body);
+    // ✅ Securely bind the listing to the authenticated user from the token middleware
+    const listing = await Listing.create({
+      ...req.body,
+      userRef: req.user.id,
+    });
     return res.status(201).json({ success: true, ...listing._doc });
   } catch (error) {
     next(error);
@@ -60,7 +64,6 @@ export const getListings = async (req, res, next) => {
   try {
     const limit = parseInt(req.query.limit) || 9;
     const startIndex = parseInt(req.query.startIndex) || 0;
-    
     
     let offer = req.query.offer;
     if (offer === undefined || offer === 'false') {
