@@ -35,6 +35,7 @@ router.post('/send-contact', async (req, res) => {
     </div>
   `;
 
+  
   try {
     await transporter.sendMail({
       from: '"Baylat Properties Portal" <info@baylatproperties.ng>',
