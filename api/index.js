@@ -88,6 +88,7 @@ const connectDB = async () => {
   return cached.conn;
 };
 
+
 app.use(async (req, res, next) => {
   try {
     await connectDB();
