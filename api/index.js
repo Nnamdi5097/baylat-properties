@@ -1,4 +1,4 @@
- import express from "express";
+import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
@@ -88,7 +88,6 @@ const connectDB = async () => {
   return cached.conn;
 };
 
-
 app.use(async (req, res, next) => {
   try {
     await connectDB();
@@ -111,14 +110,14 @@ app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || "Internal Server Error";
   console.error(`ERROR intercepted [${statusCode}]:`, message, err);
-  return res.status(statusCode).json({ success: false,  statusCode, message });
+  return res.status(statusCode).json({ success: false, statusCode, message });
 });
 
 const PORT = process.env.PORT || 5000;
 if (process.env.NODE_ENV !== "production") {
   app.listen(PORT, () => {
-    console.log(`Server is running  on port ${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
   });
 }
 
-export default app;
+export default app; 
