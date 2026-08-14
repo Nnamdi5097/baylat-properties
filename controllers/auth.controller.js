@@ -134,7 +134,7 @@ export const signOut = async (req, res, next) => {
   try {
     console.log("DEBUG: Signing out user");
     res.clearCookie('access_token', { ...cookieOptions });
-    return res.status(200).json({ success: true, message: 'User has been logged out successfully!' });
+    return res.status(200).json({ success:  true, message: 'User has been logged out successfully!' });
   } catch (error) {
     console.error("DEBUG: Signout error exception:", error);
     next(error);
