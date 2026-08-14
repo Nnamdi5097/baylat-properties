@@ -1,4 +1,4 @@
-import express from "express";
+ import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
@@ -21,41 +21,37 @@ const allowedOrigins = [
   "https://baylat-properties.vercel.app"
 ];
 
-app.use(cors({
+const corsOptions = {
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
     
-    const isAllowed = allowedOrigins.some(allowed => origin === allowed || origin.endsWith('.baylatproperties.ng') || origin.endsWith('.vercel.app'));
+    const isAllowed = allowedOrigins.some(allowed => 
+      origin === allowed || 
+      origin.endsWith('.baylatproperties.ng') || 
+      origin.endsWith('.vercel.app')
+    );
     
     if (isAllowed) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(null, false); // Fail safely instead of throwing error exception to prevent redirect blocks
     }
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"]
-}));
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+  optionsSuccessStatus: 200 // Some legacy browsers choke on 204
+};
 
-// Explicitly handle preflight requests safely with dynamic origin matching
-app.options("*", (req, res) => {
-  const origin = req.headers.origin;
-  const isAllowed = !origin || allowedOrigins.some(allowed => origin === allowed || origin.endsWith('.baylatproperties.ng') || origin.endsWith('.vercel.app'));
-  
-  if (isAllowed && origin) {
-    res.header("Access-Control-Allow-Origin", origin);
-  }
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept");
-  res.header("Access-Control-Allow-Credentials", "true");
-  res.sendStatus(204);
-});
+// Enable CORS for all routes including preflight options
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 app.use(express.json({ limit: "50mb" })); 
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser()); 
 
+// Clean up any double api paths automatically
 app.use((req, res, next) => {
   if (req.url.startsWith("/api/api/")) {
     req.url = req.url.replace("/api/api/", "/api/");
@@ -120,4 +116,4 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
-export default app; 
+export default app;
