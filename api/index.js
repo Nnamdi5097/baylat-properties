@@ -23,6 +23,7 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: function (origin, callback) {
+    // Allow non-browser requests (like Postman or server-to-server)
     if (!origin) return callback(null, true);
     
     const isAllowed = allowedOrigins.some(allowed => 
@@ -34,7 +35,7 @@ const corsOptions = {
     if (isAllowed) {
       callback(null, true);
     } else {
-      callback(null, false); 
+      callback(newoonsError('Not allowed by CORS')); 
     }
   },
   credentials: true,
