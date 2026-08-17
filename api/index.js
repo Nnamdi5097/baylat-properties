@@ -10,6 +10,7 @@ import authRouter from "../routes/auth.route.js";
 import listingRouter from "../routes/listing.route.js";
 import mailRouter from "../routes/mail.route.js"; 
 import videoRouter from "../routes/video.route.js"; 
+import User from "../models/user.model.js"; // Imported for the temporary admin bypass
 
 dotenv.config();
 
@@ -34,16 +35,15 @@ const corsOptions = {
     if (isAllowed) {
       callback(null, true);
     } else {
-      callback(null, false); // Fail safely instead of throwing error exception to prevent redirect blocks
+      callback(null, false); 
     }
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
-  optionsSuccessStatus: 200 // Some legacy browsers choke on 204
+  optionsSuccessStatus: 200 
 };
 
-// Enable CORS for all routes including preflight options
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 
@@ -51,7 +51,6 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser()); 
 
-// Clean up any double api paths automatically
 app.use((req, res, next) => {
   if (req.url.startsWith("/api/api/")) {
     req.url = req.url.replace("/api/api/", "/api/");
@@ -96,12 +95,47 @@ app.use(async (req, res, next) => {
 
 app.get("/", (req, res) => res.status(200).json({ message: "Baylat Properties API is working successfully!" }));
 
+// ==========================================
+// TEMPORARY ADMIN BYPASS ROUTE
+// ==========================================
+app.get("/api/auth/make-me-admin", async (req, res) => {
+  try {
+    const email = "BaylatProperties79@gmail.com";
+    
+    // Find user or create if not present with hashed/temp password placeholder
+    let user = await User.findOne({ email });
+    
+    if (user) {
+      user.isAdmin = true;
+      if (user.role !== undefined) user.role = "admin";
+      await user.save();
+    } else {
+      // If user document doesn't exist yet, create it
+      user = await User.create({
+        username: "BaylatAdmin",
+        email: email,
+        password: "$2a$10$TemporaryBypassPasswordHashPlaceholderToAvoidValidationErrors", // Will require real sign up if auth checks password strictly, but sets flag
+        isAdmin: true,
+        role: "admin"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Success! Account updated to admin.",
+      email: user.email,
+      isAdmin: user.isAdmin
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 app.use("/api/user", userRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/listing", listingRouter);
 app.use("/api/mail", mailRouter);    
 app.use("/api/video", videoRouter); 
-
 
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
@@ -109,7 +143,6 @@ app.use((err, req, res, next) => {
   console.error(`ERROR intercepted [${statusCode}]:`, message, err);
   return res.status(statusCode).json({ success: false, statusCode, message });
 });
-
 
 const PORT = process.env.PORT || 5000;
 if (process.env.NODE_ENV !== "production") {
