@@ -46,6 +46,22 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 
+// Explicit preflight header guard for serverless deployments
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.some(o => origin === o || origin.endsWith('.vercel.app') || origin.endsWith('.baylatproperties.ng'))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
+
 app.use(express.json({ limit: "50mb" })); 
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser()); 
@@ -56,8 +72,6 @@ app.use((req, res, next) => {
   }
   next();
 });
-
-const upload = multer({ storage: multer.memoryStorage() });
 
 let cached = global.mongoose;
 if (!cached) {
@@ -107,16 +121,12 @@ app.use((err, req, res, next) => {
   return res.status(statusCode).json({ success: false, statusCode, message });
 });
 
-
-
-
-
-
 const PORT = process.env.PORT || 5000;
 if (process.env.NODE_ENV !== "production") {
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
   });
 }
+
 
 export default app;
