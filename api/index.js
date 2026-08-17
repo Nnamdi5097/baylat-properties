@@ -10,7 +10,6 @@ import authRouter from "../routes/auth.route.js";
 import listingRouter from "../routes/listing.route.js";
 import mailRouter from "../routes/mail.route.js"; 
 import videoRouter from "../routes/video.route.js"; 
-import User from "../models/user.model.js"; // Imported for the temporary admin bypass
 
 dotenv.config();
 
@@ -94,42 +93,6 @@ app.use(async (req, res, next) => {
 });
 
 app.get("/", (req, res) => res.status(200).json({ message: "Baylat Properties API is working successfully!" }));
-
-// ==========================================
-// TEMPORARY ADMIN BYPASS ROUTE
-// ==========================================
-app.get("/api/auth/make-me-admin", async (req, res) => {
-  try {
-    const email = "BaylatProperties79@gmail.com";
-    
-    // Find user or create if not present with hashed/temp password placeholder
-    let user = await User.findOne({ email });
-    
-    if (user) {
-      user.isAdmin = true;
-      if (user.role !== undefined) user.role = "admin";
-      await user.save();
-    } else {
-      // If user document doesn't exist yet, create it
-      user = await User.create({
-        username: "BaylatAdmin",
-        email: email,
-        password: "$2a$10$TemporaryBypassPasswordHashPlaceholderToAvoidValidationErrors", // Will require real sign up if auth checks password strictly, but sets flag
-        isAdmin: true,
-        role: "admin"
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: "Success! Account updated to admin.",
-      email: user.email,
-      isAdmin: user.isAdmin
-    });
-  } catch (error) {
-    return res.status(500).json({ success: false, error: error.message });
-  }
-});
 
 app.use("/api/user", userRouter);
 app.use("/api/auth", authRouter);
