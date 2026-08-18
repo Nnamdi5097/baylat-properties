@@ -42,7 +42,6 @@ const corsOptions = {
   optionsSuccessStatus: 200 
 };
 
-// Apply CORS single source of truth
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 
@@ -113,7 +112,4 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 export default app;
-
-
-
 
