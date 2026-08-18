@@ -3,10 +3,15 @@ import { errorHandler } from './error.js';
 
 export const verifyToken = (req, res, next) => {
   try {
-    // 1. Look for the token in cookies
-    const token = req.cookies?.access_token;
+    // 1. Look for the token in cookies, with a fallback to the Authorization header
+    let token = req.cookies?.access_token;
 
-    // 2. If no token is found, return the unauthorized error
+    const authHeader = req.headers.authorization;
+    if (!token && authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    }
+
+    // 2. If no token is found in either place, return the unauthorized error
     if (!token) {
       return next(errorHandler(401, 'Unauthorized: Access token missing'));
     }
@@ -32,8 +37,7 @@ export const verifyToken = (req, res, next) => {
   }
 };
 
-
-// --- NEW: Admin Authorization Middleware ---
+// --- Admin Authorization Middleware ---
 export const verifyAdmin = (req, res, next) => {
   // Ensure verifyToken ran first so req.user exists
   if (!req.user) {
@@ -45,6 +49,7 @@ export const verifyAdmin = (req, res, next) => {
     next();
   } else {
     // User is logged in but lacks admin rights
-    return next(errorHandler(403,  'Forbidden: Admin access  required'));
+    return next(errorHandler(403, 'Forbidden: Admin access required'));
   }
 };
+
