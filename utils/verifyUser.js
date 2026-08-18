@@ -16,7 +16,7 @@ export const verifyToken = (req, res, next) => {
       return next(errorHandler(401, 'Unauthorized: Access token missing'));
     }
 
-    
+
     // 3. Verify the token signature
     if (!process.env.JWT_SECRET) {
       console.error("CRITICAL: JWT_SECRET is missing in environment variables!");
@@ -44,6 +44,8 @@ export const verifyAdmin = (req, res, next) => {
   if (!req.user) {
     return next(errorHandler(401, 'Unauthorized: Please log in first'));
   }
+
+  
 
   if (req.user.isAdmin) {
     // User is an admin, proceed to the route controller
