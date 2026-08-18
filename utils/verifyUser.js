@@ -4,7 +4,7 @@ import { errorHandler } from './error.js';
 export const verifyToken = (req, res, next) => {
   try {
     // 1. Look for the token in cookies, with a fallback to the Authorization header
-    let token = req.cookies?.access_token;
+    let token = req.cookies?.access_token || req.cookies?.token;
 
     const authHeader = req.headers.authorization;
     if (!token && authHeader && authHeader.startsWith('Bearer ')) {
@@ -16,6 +16,7 @@ export const verifyToken = (req, res, next) => {
       return next(errorHandler(401, 'Unauthorized: Access token missing'));
     }
 
+    
     // 3. Verify the token signature
     if (!process.env.JWT_SECRET) {
       console.error("CRITICAL: JWT_SECRET is missing in environment variables!");
@@ -52,4 +53,3 @@ export const verifyAdmin = (req, res, next) => {
     return next(errorHandler(403, 'Forbidden: Admin access required'));
   }
 };
-

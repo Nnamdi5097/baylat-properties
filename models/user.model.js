@@ -28,6 +28,7 @@ const userSchema = new mongoose.Schema(
   { timestamps: true   }
 );
 
+
 // Prevents overwrite errors in serverless/hot-reload environments
 const User = mongoose.models.User || mongoose.model('User', userSchema);
 
