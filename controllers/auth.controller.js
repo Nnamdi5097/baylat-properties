@@ -3,7 +3,8 @@ import bcryptjs from 'bcryptjs';
 import { errorHandler } from '../utils/error.js';
 import jwt from 'jsonwebtoken';
 
-const isProduction = process.env.NODE_ENV === 'production';
+// Automatically detect production/Vercel environment even if NODE_ENV isn't explicitly set
+const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL;
 
 const cookieOptions = {
   httpOnly: true,
@@ -134,9 +135,10 @@ export const signOut = async (req, res, next) => {
   try {
     console.log("DEBUG: Signing out user");
     res.clearCookie('access_token', { ...cookieOptions });
-    return res.status(200).json({ success:  true, message: 'User has been logged out successfully!' });
+    return res.status(200).json({ success: true, message: 'User has been logged out successfully!' });
   } catch (error) {
     console.error("DEBUG: Signout error exception:", error);
     next(error);
   }
 };
+
