@@ -14,7 +14,7 @@ const VideoSchema = new mongoose.Schema(
     },
     publicId: {
       type: String,
-      required: [true, 'Cloud storage public ID is required for deletion.'],
+      required: false, // Optional since direct client-side uploads don't generate this locally
     },
     isFeatured: {
       type: Boolean,
@@ -38,3 +38,4 @@ VideoSchema.index({ createdAt: -1 });
 const Video = mongoose.models.Video || mongoose.model('Video', VideoSchema);
 
 export default Video;
+
